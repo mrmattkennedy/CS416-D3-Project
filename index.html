@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"></html>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="js/packages/d3-annotation.min.js"></script>
+<script src="https://unpkg.com/topojson-client@3"></script>
+<script src="js/main.js"></script>
+<!-- <script src="js/charts/1796_1836_line_chart.js"></script>
+<script src="js/charts/1850_1950_line_chart.js"></script>
+<script src="js/charts/1960_2020_line_chart.js"></script>
+<script src="js/charts/entire_timeline_line_chart.js"></script> -->
+<!-- <script src="js/utils/chartText.js"></script> -->
+
+<head>
+  <link rel="stylesheet" href="style/styles.css">
+  <title>Global Warming From 1860 to 2010</title>
+</head>
+
+<body>
+  <div class="flex-box">
+    <h1>Global Warming From 1860 to 2010</h1>
+  </div>
+
+  <div class="flex-box">
+    <ul class="navbar">
+        <li><a onclick="clearChart(svg_id);clearYears();init_pre_1778(svg_width,svg_height,undefined,undefined,svg_id);current_chart='pre_1778';loadH2Element(chart_title_pre_1778);loadPElement(chart_paragraph_pre_1778);">1. Pre-1778</a></li>
+        <li><a onclick="clearChart(svg_id);clearYears();init_1796_1836(svg_width,svg_height,undefined,undefined,svg_id);current_chart='1796_1836';loadH2Element(chart_title_1796_1836);loadPElement(chart_paragraph_1796_1836);">2. 1796-1836</a></li>
+        <li><a onclick="clearChart(svg_id);clearYears();init_1850_1950(svg_width,svg_height,undefined,undefined,svg_id_with_legend_hash);current_chart='1850_1950';loadH2Element(chart_title_1850_1950);loadPElement(chart_paragraph_1850_1950);">3. 1850-1950</a></li>
+        <li><a onclick="clearChart(svg_id);clearYears();init_1960_2020(svg_width,svg_height,undefined,undefined,svg_id);current_chart='1960_2020';loadH2Element(chart_title_1960_2020);loadPElement(chart_paragraph_1960_2020);">4. 1960-2020</a></li>
+        <li><a onclick="clearChart(svg_id);clearYears();init_entire_timeline(svg_width,svg_height,undefined,undefined,svg_id);current_chart='full';loadH2Element(chart_title_full);loadPElement(chart_paragraph_full);">5. Full Recorded Timeline</a></li>
+      </ul>
+  </div>
+  <br>
+
+  <div class="flex-box">
+    <h2 id="chart-text"></h2>
+  </div>
+  
+  <div class="flex-box-charts">
+    <svg id="global-warming-graph" width="1200" height="800"></svg>
+  </div>
+  <br>
+
+  <script src="js/graphs/all_countries.js" onload="all_country_circles();"></script>
+</body>
+
+</html>
