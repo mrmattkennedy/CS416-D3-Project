@@ -1,5 +1,13 @@
 let svgId = '#global-warming-graph';
 
+function getCountryCode(countryName, rawData) {
+    for (var i=0; i < rawData.length; i++) {
+        if (rawData[i].Country == countryName) {
+            return rawData[i];
+        }
+    }
+}
+
 async function all_country_circles() {
     //First, load the data in
     const rawData = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
@@ -7,10 +15,10 @@ async function all_country_circles() {
     console.log(countryCodes);
 
     //Next, create a grid for the circles representing the countries (164 in total) 
-    const numRows = 10
-    const numCols = 17
+    const numRows = 8
+    const numCols = 19
     const tableSize = 1000
-    var tableData = d3.range(numCols*numRows).slice(0, -7); //Remove last 7 items to match data
+    var tableData = d3.range(numCols*numRows).slice(0, -1); //Remove last 7 items to match data
 
     //Create x and y scale for circles
     var x = d3.scaleBand()
@@ -36,14 +44,14 @@ async function all_country_circles() {
 
     //Create linear chart for gradient filling in
     var circleColors = d3.scaleLinear()
-        .domain([0.5, 2])
-        .range(["blue", "orange"]);
+        .domain([1, 1.8])
+        .range(["ghostwhite", "darkorange"]);
 
     //Fill the container with circles
     container.selectAll("circle")
         .data(tableData)
         .enter().append("circle")
-        .attr('cx', function(d) {return x(d % numCols)*1.5;})
+        .attr('cx', function(d) {return x(d % numCols)*1.6;})
         .attr('cy', function(d) {return y(Math.floor(d / numCols));})
         .attr('r', 40)
         .attr('fill', function(d, i) {return circleColors(parseFloat(rawData[i].Diff));});
@@ -51,17 +59,11 @@ async function all_country_circles() {
     //Fill circles with text
     var side = 2 * 2 * Math.cos(Math.PI / 4),
     dx = 2 - side / 2;
-    container.selectAll("foreignObject")
-        .data(tableData)
-        .enter().append("foreignObject")
-        .attr("width", side)
-        .attr("height", side);
-    
     container.selectAll("text")
         .data(tableData)
-        .enter().append("xhtml:body")
+        .enter().append("text")
+        .text(function(d,i) { return rawData[i].Country; })
         .attr("x", function(d) {return (x(d % numCols)*1.5)-15;})
         .attr("y", function(d) {return (y(Math.floor(d / numCols)))+5;})
-        .text(function(d,i) { return rawData[i].Country;})
         .style("font", "12px times");
 }
