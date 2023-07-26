@@ -3,15 +3,14 @@ let svgId = '#global-warming-graph';
 async function all_country_circles() {
     //First, load the data in
     const rawData = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
-    console.log(rawData[0]);
+    const countryCodes = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CountryCodes.csv');
+    console.log(countryCodes);
 
     //Next, create a grid for the circles representing the countries (164 in total) 
     const numRows = 10
     const numCols = 17
     const tableSize = 1000
     var tableData = d3.range(numCols*numRows).slice(0, -7); //Remove last 7 items to match data
-    
-    console.log(tableData);
 
     //Create x and y scale for circles
     var x = d3.scaleBand()
