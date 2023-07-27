@@ -6,6 +6,7 @@
 
 <head>
   <link rel="stylesheet" href="extras/style.css">
+  <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/icon.ico">
   <title>Global Warming From 1860 to 2010</title>
 </head>
 
@@ -17,6 +18,12 @@
 
   <!-- This div holds the circles that a user can click on -->
   <div id="mainSvgHolder">
+    <div id="mainSvgFilters">
+      <div class="slidecontainer">
+        <div class="slider"><input type="range" min="0" max="2.7" step="0.1" value="0" oninput="rangeValue.innerText = this.value"><p id="rangeValue">0</p></div> 
+      </div>
+    </div>
+
     <svg id="global-warming-graph" height="1100" width="1600"></svg>
   </div>
 
