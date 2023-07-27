@@ -6,6 +6,8 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: auto;
+    flex-direction: column;
 }
 
 #global-warming-graph, #country-warming-graph {
@@ -36,4 +38,5 @@ h1 {
     -webkit-box-shadow: 0 0 10px  rgba(0,0,0,0.6);
     -o-box-shadow: 0 0 10px  rgba(0,0,0,0.6);
     border-radius:5px;
+    z-index: 100;
 }

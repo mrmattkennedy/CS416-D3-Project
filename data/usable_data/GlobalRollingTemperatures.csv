@@ -1,4 +1,4 @@
-Year,AverageTemperatureRolling,AverageTemperatureUncertaintyRolling,LandAndOceanAverageTemperatureRolling,LandAndOceanAverageTemperatureUncertaintyRolling,HottestDate,LandMaxTemperature,LandMaxTemperatureUncertainty
+Year,LandAverageTemperatureRolling,LandAverageTemperatureUncertaintyRolling,AverageTemperatureRolling,AverageTemperatureUncertaintyRolling,HottestDate,LandMaxTemperature,LandMaxTemperatureUncertainty
 1860,8.0709,0.786025,14.929750000000002,0.27620833333333333,1860-06-01,19.163,1.361
 1861,8.037691666666666,0.763175,14.910633333333333,0.27285,1861-07-01,19.37,1.53
 1862,7.983533333333334,0.7402416666666667,14.883991666666669,0.269975,1862-07-01,20.663,1.998

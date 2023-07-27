@@ -12,17 +12,21 @@
 <body style="width:100%;height:100%;margin:0;">
   <h1>Global Warming From 1860 to 2010</h1>
 
+  <!-- Tool tip for data available to user -->
   <div id="tooltip"></div>
 
-
+  <!-- This div holds the circles that a user can click on -->
   <div id="mainSvgHolder">
     <svg id="global-warming-graph" height="1100" width="1600"></svg>
   </div>
 
+  <!-- This div holds the graph that shows rolling average temp for a country over time -->
   <div id="countrySvgHolder">
+    <button onclick="transitionToCircles()">Test</button>
     <svg id="country-warming-graph" height="1100" width="1600"></svg>
   </div>
 
+  <!-- Loading the JS -->
   <script src="extras/graph_functions.js" onload="all_country_circles();"></script>
 
 </body>

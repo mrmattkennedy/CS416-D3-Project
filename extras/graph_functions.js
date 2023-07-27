@@ -1,19 +1,30 @@
 //Add a transition for starting scene
-//Transition in by moving main out and fading new in? Or move new to position and then quickly translate it back over 750ms
 //Go through GlobalRollingAverageCountry.csv and GlobalRollingTemperatures.csv and fix country names not in GlobalAverageDifference.
-//Make a way to go back to main circles
 //Do I need to clear country SVG after each run?
+//Create gradient under chart from colder to warmer depending on Y, or just change the actual line color
+
+//MAYBES:
+//Add a way to sort by temperature (ascending/descending), or by name (ascending/descending) - no
 
 let mainSvgID = '#global-warming-graph';
 let countrySvgID = '#country-warming-graph';
 
 //Load larger data in now
-var countryAvgs;
-var globalAvgs;
+var rawData, countryCodes, countryAvgs;
+var avgMin, avgMax;
+// var globalAvgs;
 
 //Some constants
 const tableSize = 1000;
 const chartSize = 800;
+const transitionSize = 1100;
+const circleDomainMin = 1.0;
+const circleDomainMax = 1.8;
+const diffMean = 1.55;
+const numRows = 8;
+const numCols = 19;
+const startColor = 'ghostwhite';
+const endColor = 'darkOrange'
 
 /************************************************ 
  * Function to create the initial circles as part of the martini glass view.
@@ -29,22 +40,25 @@ const chartSize = 800;
 ************************************************/
 async function all_country_circles() {
     //First, load the data in now so it's only loaded once
-    const rawData = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
-    const countryCodes = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CountryCodes.csv');
+    rawData = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
+    countryCodes = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CountryCodes.csv');
     countryAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingAverageCountry.csv', processData);
-    globalAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingTemperatures.csv', processData);
-
+    // globalAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingTemperatures.csv', processData);
     //Sort global averages now so it's only done once
-    globalAvgs.sort((a,b) => a.year - b.year);
+    // globalAvgs.sort((a,b) => a.year - b.year);
 
-    const diffMean = 1.55;
+    //Get min and max
+    var allTemps = [];
+    for (i = 0; i < countryAvgs.length; i++)
+        allTemps.push(countryAvgs[i].value);
+
+    avgMin = d3.min(allTemps);
+    avgMax = d3.max(allTemps);
 
     var tooltip = d3.select("#tooltip")
-    //Next, create a grid for the circles representing the countries (164 in total) 
-    const numRows = 8;
-    const numCols = 19;
-    const transitionSize = 1100;
-    var tableData = d3.range(numCols*numRows).slice(0, -1); //Remove last 7 items to match data
+
+    //Next, create a grid for the circles representing the countries (151 in total) 
+    var tableData = d3.range(numCols*numRows).slice(0, -1); //Remove last 1 items to match data
 
     //Create x and y scale for circles
     var x = d3.scaleBand()
@@ -68,13 +82,13 @@ async function all_country_circles() {
 
     //Create linear chart for gradient filling in
     var circleColors = d3.scaleLinear()
-        .domain([1, 1.8])
+        .domain([circleDomainMin, circleDomainMax])
         .range(["ghostwhite", "darkorange"]);
     // .range(["rgba(248,248,255,0.75)","rgba(255,170,0,1)"]);
     
     //Create linear range for opacity
     var circleOpacity = d3.scaleLinear()
-        .domain([1, 1.8])
+        .domain([circleDomainMin, circleDomainMax])
         .range([0.5, 1]);
 
         
@@ -97,34 +111,7 @@ async function all_country_circles() {
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
         })
         .on("mouseout", function() {tooltip.style("opacity", 0)})
-        .on("click", function(d,i) {
-            svg.transition()
-                .duration(500)
-                .attr("transform", "translate(" + -transitionSize*2 + ",0)scale(1)")
-                .on("end", function(d) {
-                    //Move graph off screen, then make country graph visible
-                    var countrySvg = d3.select(countrySvgID)
-                    .attr("transform", "translate(" + transitionSize*2 + ",0)scale(1)")
-
-                    //Make the div that holds the circles invisible
-                    d3.select('#mainSvgHolder').style('display', 'none');
-                    
-                    //Make the div that holds the country svg visible
-                    d3.select('#countrySvgHolder').style('display', 'flex');
-                    d3.select('#countrySvgHolder').style('justify-content', 'center');
-
-                    //Transition country graph in
-                    countrySvg.transition()
-                        .duration(500)
-                        .attr("transform", "translate(350,50)");     
-                });
-
-            //Don't propogate to parent elements
-            d3.event.stopPropagation();
-            
-            //Create new graphs
-            createLineGraphsForCountry(rawData[i].Country)
-          });
+        .on("click", transitionToCountryGraph);
 
     //Fill circles with text
     container.selectAll("text")
@@ -144,30 +131,39 @@ async function all_country_circles() {
         .on("mousemove", function() {
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
         })
-        .on("mouseout", function() {tooltip.style("opacity", 0)});
+        .on("mouseout", function() {tooltip.style("opacity", 0)})
+        .on("click", transitionToCountryGraph);
 }
 
 
 
 
 //Create a line graph for a specific country, along with the global average over time to compare
-async function createLineGraphsForCountry(country) {
+async function createLineGraphsForCountry(idx) {
+    const country = rawData[idx].Country
     const offset = 50;
 
     //Get country data and sort by year
-    let countryData = countryAvgs.filter(item => item.country == 'Afghanistan');
+    let countryData = countryAvgs.filter(item => item.country == country);
     countryData.sort((a,b) => a.year - b.year);
 
     //Combine global data and country data into one array to get min/max scale for y axis
     var allTemps = [];
     for (i = 0; i < countryData.length; i++)
         allTemps.push(countryData[i].value);
-    for (i = 0; i < globalAvgs.length; i++)
-        allTemps.push(globalAvgs[i].value);
 
-    //Get svg, add margins and get width of svg
-    var svg = d3.select(countrySvgID)
-        // .attr("transform", "translate(50%,50%)");
+    const min = d3.min(allTemps);
+    const max = d3.max(allTemps);
+    // for (i = 0; i < globalAvgs.length; i++)
+    //     allTemps.push(globalAvgs[i].value);
+
+    //Get svg, clear conents
+    var svg = d3.select(countrySvgID);
+    svg.selectAll("*").remove();
+
+    //Group for sub elements
+    const g = svg.append("g")
+        .attr("transform", "translate(" + offset + "," + 0 + ")");
 
     var x = d3.scaleTime()
         .domain(d3.extent(countryData, function(d) { return d.year; }))
@@ -176,26 +172,55 @@ async function createLineGraphsForCountry(country) {
         .domain([d3.min(allTemps), d3.max(allTemps)])
         .range([ chartSize, 0 ]);
     
-    
     //Add X axis
     svg.append("g")
         .attr("transform", "translate(" + offset + "," + chartSize + ")")
         .attr('width', chartSize)
         .attr('height', chartSize)
         .call(d3.axisBottom(x));
+    
+
+    //Y axis gridline
+    g.append("g")
+    .attr("class", "y-axis-grid")
+    .attr("stroke-width", 0.1)
+    .call(
+      d3.axisLeft(y)
+        .tickSize(-chartSize)
+        .tickFormat("")
+        .ticks(5)
+
+    );
 
     //Add Y axis
     svg.append("g")
         .attr("transform", "translate(" + offset + ",0)")
         .call(d3.axisLeft(y));
+    
+    //Set the gradient for the line
+    svg.append("linearGradient")
+        .attr("id", "line-gradient")
+        .attr("gradientUnits", "userSpaceOnUse")
+        .attr("x1", 0)
+        .attr("y1", y(avgMin))
+        .attr("x2", 0)
+        .attr("y2", y(avgMax))
+        .selectAll("stop")
+        .data([
+            {offset: "0%", color: 'orange'},
+            {offset: "100%", color: 'red'}
+        ])
+        .enter().append("stop")
+        .attr("offset", function(d) { return d.offset; })
+        .attr("stop-color", function(d) { return d.color; });
 
-    console.log(globalAvgs);
+
     //Add the line for country data
     svg.append("path")
-        .datum(globalAvgs)
+        .datum(countryData)
         .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 1.5)
+        .attr("stroke", "url(#line-gradient)" )
+        .attr("stroke-width", 2)
         .attr("d", d3.line()
         .x(function(d) { return x(d.year)+offset })
         .y(function(d) { return y(d.value) })
@@ -218,4 +243,69 @@ function processData(d) {
             year: d3.timeParse("%Y")(d.Year), 
             value: d.AverageTemperatureRolling,
             uncertainty: d.AverageTemperatureUncertaintyRolling};
+}
+
+function tickWidth(selection) {
+    const ticks = selection.selectAll(".tick text")
+        .nodes()
+        .map(function(d) {
+            return +d.textContent;
+        });
+    return scale(ticks[1]) - scale(ticks[0]);
+}
+
+function transitionToCountryGraph(d, i) {
+    var svg = d3.select(mainSvgID);
+
+    svg.transition()
+        .duration(500)
+        .attr("transform", "translate(" + -transitionSize*2 + ",0)scale(1)")
+        .on("end", function() {
+            //Move graph off screen, then make country graph visible
+            var countrySvg = d3.select(countrySvgID)
+            .attr("transform", "translate(" + transitionSize*2 + ",0)scale(1)")
+
+            //Make the div that holds the circles invisible
+            d3.select('#mainSvgHolder').style('display', 'none');
+            
+            //Make the div that holds the country svg visible
+            d3.select('#countrySvgHolder').style('display', 'flex');
+            d3.select('#countrySvgHolder').style('justify-content', 'center');
+
+            //Transition country graph in
+            countrySvg.transition()
+                .duration(500)
+                .attr("transform", "translate(350,50)");     
+        });
+
+    //Don't propogate to parent elements
+    d3.event.stopPropagation();
+    
+    //Create new graphs
+    createLineGraphsForCountry(i)
+}
+
+function transitionToCircles() {
+    var svg = d3.select(countrySvgID);
+
+    svg.transition()
+        .duration(500)
+        .attr("transform", "translate(" + transitionSize*2 + ",0)scale(1)")
+        .on("end", function() {
+            //Move graph off screen, then make country graph visible
+            var mainSvg = d3.select(mainSvgID)
+            .attr("transform", "translate(" + -transitionSize*2 + ",0)scale(1)")
+
+            //Make the div that holds the circles invisible
+            d3.select('#countrySvgHolder').style('display', 'none');
+            
+            //Make the div that holds the country svg visible
+            d3.select('#mainSvgHolder').style('display', 'flex');
+            d3.select('#mainSvgHolder').style('justify-content', 'center');
+
+            //Transition country graph in
+            mainSvg.transition()
+                .duration(500)
+                .attr("transform", "translate(0,0)");     
+        });
 }
