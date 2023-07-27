@@ -2,19 +2,20 @@ h1 {
     text-align: center;
 }
 
-
-#svgHolder {
-    height: 100%;
-    width: 100%;
-    margin-left:auto; 
-    margin-right:auto; 
-    display:block;
-    text-align: center;
+#mainSvgHolder, #countrySvgHolder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-#global-warming-graph {
-    height: 1000px;
-    width: 1600px;
+#global-warming-graph, #country-warming-graph {
+    display: flex;
+    justify-content: center;
+    align-items: center; 
+}
+
+#countrySvgHolder {
+    display: none;
 }
 
 #tooltip {

@@ -13,11 +13,18 @@
   <h1>Global Warming From 1860 to 2010</h1>
 
   <div id="tooltip"></div>
-  <div id="svgHolder">
-    <svg id="global-warming-graph"></svg>
+
+
+  <div id="mainSvgHolder">
+    <svg id="global-warming-graph" height="1100" width="1600"></svg>
   </div>
 
-  <script src="extras/graphs/all_countries.js" onload="all_country_circles();"></script>
+  <div id="countrySvgHolder">
+    <svg id="country-warming-graph" height="1100" width="1600"></svg>
+  </div>
+
+  <script src="extras/graph_functions.js" onload="all_country_circles();"></script>
+
 </body>
 
 </html>
