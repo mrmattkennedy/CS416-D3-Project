@@ -16,8 +16,13 @@
   <!-- Tool tip for data available to user -->
   <div id="tooltip"></div>
 
-  <!-- This div holds the circles that a user can click on -->
+  <!-- This div holds the country circles that a user can click on -->
   <div id="mainSvgHolder">
+    <div>
+      <button onclick="transitionToGlobalFromCountryCircles()">View global graph</button> 
+      <button onclick="transitionToCityCirclesFromCountryCircles()">View warming major cities</button> 
+    </div>
+    <br>
 
     <div id="mainSvgFilters">
       <!-- Filter for minimum diff in temp -->
@@ -39,7 +44,38 @@
     </div>
 
     <br>
-    <svg id="global-warming-graph" height="1100" width="1600"></svg>
+    <svg id="country-warming-circles" height="1100" width="1600"></svg>
+  </div>
+
+    <!-- This div holds the circles that a user can click on -->
+  <div id="citySvgHolder">
+    <div>
+      <button onclick="transitionToGlobalFromCountryCircles()">View global graph</button> 
+      <button onclick="transitionToCityCirclesFromCountryCircles()">View warming major cities</button> 
+    </div>
+    <br>
+
+    <div id="citySvgFilters">
+      <!-- Filter for minimum diff in temp -->
+      <label style="margin-left: 10px;">Minimum difference in &degC from 1860 to 2010 : </label>
+      <input id='minDiff' type="range" min="0" max="2.7" step="0.1" value="0" oninput="rangeValue.innerText=this.value" onchange="all_city_circles(this.value, 0, false, true)">
+      <label for="minDiff" id="rangeValue" style="margin-right: 10px;">0</label>
+      
+      <br>
+      <!-- Dropdown for sorting alphabetically or by temp -->
+      <div class="dropdown">
+        <button class="dropbtn">Sort cities</button>
+        <div class="dropdown-content">
+          <a onclick="all_city_circles(0.0, 0, true, false)">Alphabetically (A to Z)</a>
+          <a onclick="all_city_circles(0.0, 1, true, false)">Alphabetically (Z to A)</a>
+          <a onclick="all_city_circles(0.0, 2, true, false)">By &degC difference (increasing)</a>
+          <a onclick="all_city_circles(0.0, 3, true, false)">By &degC difference (decreasing)</a>
+        </div>
+      </div>
+    </div>
+
+    <br>
+    <svg id="city-warming-circles" height="1100" width="1600"></svg>
   </div>
 
   <!-- This div holds the graph that shows rolling average temp for a country over time -->
@@ -49,8 +85,18 @@
     <svg id="country-warming-graph" height="900" width="900"></svg>
   </div>
 
+  <!-- This div holds the graph that shows rolling average temp for global averages -->
+  <div id="globalSvgHolder">
+    <div>
+      <button onclick="transitionToCountryCirclesFromGlobal()">View warming countries</button> 
+      <button onclick="transitionToCityCirclesFromGlobal()">View warming major cities</button> 
+    </div>
+    <br>
+    <svg id="global-warming-graph" height="900" width="900"></svg>
+  </div>
+
   <!-- Loading the JS -->
-  <script src="extras/graph_functions.js" onload="all_country_circles(0.0, 0, false);"></script>
+  <script src="extras/graph_functions.js" onload="globalTempDifferences();"></script>
 
 </body>
 

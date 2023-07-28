@@ -2,7 +2,7 @@ h1 {
     text-align: center;
 }
 
-#mainSvgHolder, #countrySvgHolder {
+#mainSvgHolder, #countrySvgHolder, #globalSvgHolder, #citySvgHolder {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -10,7 +10,7 @@ h1 {
     flex-direction: column;
 }
 
-#global-warming-graph, #country-warming-graph {
+#country-warming-circles, #city-warming-circles, #country-warming-graph, #global-warming-graph {
     display: flex;
     justify-content: center;
     align-items: center; 
@@ -22,7 +22,7 @@ h1 {
     border-radius:10px;
 }
 
-#countrySvgHolder {
+#mainSvgHolder, #countrySvgHolder, #citySvgHolder {
     display: none;
 }
 

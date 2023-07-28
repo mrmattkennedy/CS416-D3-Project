@@ -1,4 +1,4 @@
-City,Year,AverageTemperature,AverageTemperatureUncertainty
+City,Year,AverageTemperatureRolling,AverageTemperatureUncertaintyRolling
 Abidjan,1860,,
 Abidjan,1861,,
 Abidjan,1862,25.593692121212122,1.3758368181818184
