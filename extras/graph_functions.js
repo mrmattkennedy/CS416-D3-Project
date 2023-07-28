@@ -44,8 +44,8 @@ var lastMinCountry = 0, lastMinCity = 0, lastCountryEnum = 0, lastCityEnum = 0;
 async function globalTempDifferences() {
     if (countryDiffs === undefined || countryCodes === undefined || countryAvgs === undefined) {
         //First, load the data in now so it's only loaded once
-        countryDiffs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
         countryCodes = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CountryCodes.csv');
+        countryDiffs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv', processCountryDiff);
         countryAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingAverageCountry.csv', processData);
         cityAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CityRollingTemperatures.csv', processDataCity);
         cityDiffs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CityDiffTemperatures.csv', processDataCityDiff);
@@ -208,19 +208,6 @@ async function globalTempDifferences() {
                 .style("top", "0px")
                 .style("left", "0px")
         });
-        // .on("click", transitionToCountryGraph);
-        
-        //Add color legend - not supported natively :(
-        // var colorScale = d3.scaleLinear()
-        //     .domain([0,500])
-        //     .range(["red", "blue"]);
-
-        // var legend = d3.legendColor()
-        //     .scale(colorScale);
-        
-        // svg.append("g")
-        //     .attr("transform", "translate(500,10)")
-        //     .call(legend);
         
         //Create temp objects for annotations
         var highestTempObj = globalData.reduce(function(prev, current) {
@@ -314,7 +301,258 @@ async function globalTempDifferences() {
 
 }
 
+/************************************************ 
+ * Function to lay out line chart of temperature in celsius
+ * for a location from 1860 to 2010. This chart includes
+ * a gradient based on the minimum/maximum of that location's
+ * temperature, and scatter points for tool tips.
+ * 
+ * 
+ * params: dataSource - The data to use for the graph,
+ *  locationFilter - the location to filter data on,
+ *  svgID - The SVG to update,
+ *  lineGradientID - Need unique line gradient ID's or it breaks
+ * returns: None
+************************************************/
+function createLineGraph(dataSource, locationFilter, svgID, lineGradientID) {
+    // const location = dataSource[idx].location
+    const offset = 60;
+    const scatterDelta = 5;
 
+    //Get country data and sort by year
+    let data = dataSource.filter(item => item.location == locationFilter);
+    data.sort((a,b) => a.year - b.year);
+    
+    
+    //Create scatter plot data from country data
+    var scatterData = [];
+    for (i = 0; i < data.length; i=i+scatterDelta) {
+        scatterData.push(data[i]);
+      }
+
+    //Combine global data and country data into one array to get min/max scale for y axis
+    var allTemps = [];
+    for (i = 0; i < data.length; i++)
+        allTemps.push(data[i].value);
+
+    const min = d3.min(allTemps);
+    const max = d3.max(allTemps);
+    // for (i = 0; i < globalAvgs.length; i++)
+    //     allTemps.push(globalAvgs[i].value);
+
+    //Get svg, clear conents
+    var svg = d3.select(svgID);
+    svg.selectAll("*").remove();
+
+    //Group for sub elements
+    const g = svg.append("g")
+        .attr("transform", "translate(" + offset + "," + 0 + ")");
+
+
+    //Add title to chart
+    var textSize = locationFilter.length >= 18 ? "16px" : "18px";
+    var x_title = locationFilter.length >= 18 ? 260 : 225;
+    svg.append("text")
+        .attr("x", x_title)             
+        .attr("y", 40)
+        .attr("text-anchor", "middle")  
+        .style("font-size", textSize) 
+        .style("text-decoration", "underline")  
+        .text(locationFilter + " Rolling Temperature Average");
+
+    var x = d3.scaleTime()
+        .domain(d3.extent(data, function(d) { return d.year; }))
+        .range([ 0, chartSize ]);
+    var y = d3.scaleLinear()
+        .domain([d3.min(allTemps), d3.max(allTemps)])
+        .range([ chartSize, 0 ]);
+    
+    //Add X axis
+    svg.append("g")
+        .attr("transform", "translate(" + offset + "," + chartSize + ")")
+        .style("font", "14px times")
+        .attr('width', chartSize)
+        .attr('height', chartSize)
+        .call(d3.axisBottom(x))
+        .append("text")
+        .attr("fill", "black")
+        .style("font", "14px times")
+        .attr("transform", "translate(" + -40 + "," + -(chartSize/2) + ")rotate(270)")
+        .text('10 year average temperature (\xB0C)');
+
+    //Add Y axis
+    svg.append("g")
+        .attr("transform", "translate(" + offset + ",0)")
+        .style("font", "14px times")
+        .call(d3.axisLeft(y))
+        .append("text")
+        .attr("fill", "black")
+        .style("font", "14px times")
+        .attr("transform", "translate(" + (chartSize/2) + "," + (chartSize+50) + ")")
+        .text("Year");
+
+    //Y axis gridline
+    g.append("g")
+        .attr("class", "y-axis-grid")
+        .attr("stroke-width", 0.1)
+        .call(
+          d3.axisLeft(y)
+            .tickSize(-chartSize)
+            .tickFormat("")
+            .ticks(5)
+    
+        );
+    
+    //Set the gradient for the line
+    svg.append("linearGradient")
+        .attr("id", lineGradientID)
+        .attr("gradientUnits", "userSpaceOnUse")
+        .attr("x1", 0)
+        .attr("y1", y(min))
+        .attr("x2", 0)
+        .attr("y2", y(max))
+        .selectAll("stop")
+        .data([
+            {offset: "0%", color: 'orange'},
+            {offset: "100%", color: 'red'}
+        ])
+        .enter().append("stop")
+        .attr("offset", function(d) { return d.offset; })
+        .attr("stop-color", function(d) { return d.color; });
+
+
+    //Add the line for country data
+    svg.append("path")
+        .datum(data)
+        .attr("fill", "none")
+        .attr("stroke", "url(#" + lineGradientID + ")")
+        .attr("stroke-width", 2)
+        .attr("d", d3.line()
+        .x(function(d) { return x(d.year)+offset })
+        .y(function(d) { return y(d.value) })
+    );
+
+    //Add scatter points for tool tips
+    var tooltip = d3.select("#tooltip")
+    svg.append("g")
+        .selectAll("dot")
+        .data(scatterData)
+        .enter()
+        .append("circle")
+        .attr("cx", function(d) { return x(d.year)+offset } )
+        .attr("cy", function(d) { return y(d.value) } )
+        .attr("r", 5)
+        .attr("fill", "#581845")
+        .on("mouseover", function(d,i) {
+            diff = Math.round((scatterData[i].value - scatterData[0].value) * 100) / 100;
+            if (diff > 0) {
+                diff = '+' + diff;
+            }
+            tooltip.style("opacity", 1)
+            .style("top", (d3.event.pageY-10)+"px")
+            .style("left",(d3.event.pageX+10)+"px")
+            .html(country + '<br>Year ' + scatterData[i].year.getFullYear() + '<br>' + Math.round(scatterData[i].value*100)/100 + '\xB0C (' + diff + '\xB0C)');
+        })
+        .on("mousemove", function() {
+            return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
+        })
+        .on("mouseout", function() {
+            tooltip.style("opacity", 0)
+                .style("top", "0px")
+                .style("left", "0px")
+        })
+
+    //Create temp objects for annotations
+    var highestTempObj = data.reduce(function(prev, current) {
+        if (+current.value > +prev.value) {
+            return current;
+        } else {
+            return prev;
+        }
+    });
+
+    var tempObj1900 = data.filter(x => x.year.getFullYear() == 1900)[0];
+    var tempObj1950 = data.filter(x => x.year.getFullYear() == 1950)[0];
+    var tempObj2000 = data.filter(x => x.year.getFullYear() == 2000)[0];
+
+    const timeFormat = d3.timeFormat("%y");
+    const parseTime = d3.timeParse("%y");
+    const type = d3.annotationLabel;
+    const annotations = [
+        {
+            note: {
+                label: "Hottest temp (" + highestTempObj.year.getFullYear() + "): " + Math.round(highestTempObj.value*100)/100 + "\xB0C",
+                wrap: 150
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: 25,
+            dx: -300,
+            x: x(highestTempObj.year)+offset,
+            y: y(highestTempObj.value),
+        },
+        {
+            note: {
+                label: "Year 1900: " + Math.round(tempObj1900.value*100)/100 + "\xB0C",
+                bgPadding: 5,
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: -100,
+            dx: -100,
+            x: x(tempObj1900.year)+offset,
+            y: y(tempObj1900.value)
+        },
+        {
+            note: {
+                label: "Year 1950: " + Math.round(tempObj1950.value*100)/100 + "\xB0C",
+                bgPadding: 5
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: -100,
+            dx: -100,
+            x: x(tempObj1950.year)+offset,
+            y: y(tempObj1950.value)
+        },
+        {
+            note: {
+                label: "Year 2000: " + Math.round(tempObj2000.value*100)/100 + "\xB0C",
+                bgPadding: 5
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: -50,
+            dx: -100,
+            x: x(tempObj2000.year)+offset,
+            y: y(tempObj2000.value)
+        }
+
+    ];
+
+    const makeAnnotations = d3.annotation()
+        .editMode(true)
+        .notePadding(15)
+        .type(type)
+        
+        .accessors({
+            x: d => x(parseTime(d.year)),
+            y: d => y(d.value)
+        })
+        .accessorsInverse({
+            date: d => timeFormat(x.invert(d.x)),
+            close: d => y.invert(d.y)
+        })
+        .annotations(annotations)
+
+    svg.append("g")
+        .attr("class", "annotation-group")
+        .call(makeAnnotations)
+}
 /************************************************ 
  * Function to create the initial circles as part of the martini glass view.
  * Each circle has text overlaying it with the 3 digit country code
@@ -343,22 +581,22 @@ async function all_country_circles(minDiff, sortEnum, useLastMin, useLastSortEnu
     lastCountryEnum = minDiff;
 
     //Filter data first by min diff
-    filteredCountryTableData = countryDiffs.filter(item => item.Diff >= minDiff);
+    filteredCountryTableData = countryDiffs.filter(item => item.value >= minDiff);
 
     //Check enum to sort
     var btn = document.querySelector('#sortCountriesBtn');
     if (sortEnum == 0) { //A to Z
-        filteredCountryTableData.sort((a,b) => a.Country.localeCompare(b.Country));
+        filteredCountryTableData.sort((a,b) => a.location.localeCompare(b.location));
         btn.innerHTML = 'Sort countries: Alphabetic (A to Z)';
     } else if (sortEnum == 1) { //Z to A
-        filteredCountryTableData.sort((a,b) => a.Country.localeCompare(b.Country));
+        filteredCountryTableData.sort((a,b) => a.location.localeCompare(b.location));
         filteredCountryTableData.reverse();
         btn.innerHTML = 'Sort countries: Alphabetic (Z to A)';
     } else if (sortEnum == 2) { //Diff increasing
-        filteredCountryTableData.sort((a,b) => a.Diff - b.Diff);
+        filteredCountryTableData.sort((a,b) => a.value - b.value);
         btn.innerHTML = 'Sort countries: Diff (increasing)';
     } else if (sortEnum == 3) { //Diff decreasing
-        filteredCountryTableData.sort((a,b) => a.Diff - b.Diff);
+        filteredCountryTableData.sort((a,b) => a.value - b.value);
         filteredCountryTableData.reverse();
         btn.innerHTML = 'Sort countries: Diff (decreasing)';
     }
@@ -406,14 +644,14 @@ async function all_country_circles(minDiff, sortEnum, useLastMin, useLastSortEnu
         .enter().append("circle")
         .attr('cx', function(d) {return x(d % numCountryCols)*1.6;})
         .attr('cy', function(d) {return y(Math.floor(d / numCountryCols));})
-        .attr('r', function(d, i) {return 35 + (parseFloat(filteredCountryTableData[i].Diff) - diffMeanCountry)*10;})
-        .attr('fill', function(d, i) {return circleColors(parseFloat(filteredCountryTableData[i].Diff));})
+        .attr('r', function(d, i) {return 35 + (parseFloat(filteredCountryTableData[i].value) - diffMeanCountry)*10;})
+        .attr('fill', function(d, i) {return circleColors(parseFloat(filteredCountryTableData[i].value));})
         .attr('stroke', 'black')
         .on("mouseover", function(d,i) { //Mouseover for tooltip
             tooltip.style("opacity", 1)
                 .style("top", (d3.event.pageY-10)+"px")
                 .style("left",(d3.event.pageX+10)+"px")
-                .html(filteredCountryTableData[i].Country + '<br>Diff: ' + Math.round(filteredCountryTableData[i].Diff * 100) / 100 + '\xB0C');
+                .html(filteredCountryTableData[i].location + '<br>Diff: ' + Math.round(filteredCountryTableData[i].value * 100) / 100 + '\xB0C');
         })
         .on("mousemove", function() { //Move tooltip with mouse
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
@@ -429,16 +667,16 @@ async function all_country_circles(minDiff, sortEnum, useLastMin, useLastSortEnu
     container.selectAll("text")
         .data(tableData)
         .enter().append("text")
-        .text(function(d,i) { return getCountryCode(filteredCountryTableData[i].Country, countryCodes); })
+        .text(function(d,i) { return getCountryCode(filteredCountryTableData[i].location, countryCodes); })
         .attr("x", function(d) {return (x(d % numCountryCols)*1.601)-15;})
         .attr("y", function(d) {return (y(Math.floor(d / numCountryCols)))+5;})
-        .attr("opacity", function(d, i) {return circleOpacity(d.Diff);})
+        .attr("opacity", function(d, i) {return circleOpacity(d.value);})
         .attr("font-family","Franklin Gothic")
         .on("mouseover", function(d,i) { //Mouseover for tooltip
             tooltip.style("opacity", 1)
             .style("top", (d3.event.pageY-10)+"px")
             .style("left",(d3.event.pageX+10)+"px")
-            .html(filteredCountryTableData[i].Country + '<br>Diff: ' + Math.round(filteredCountryTableData[i].Diff * 100) / 100 + '\xB0C');
+            .html(filteredCountryTableData[i].location + '<br>Diff: ' + Math.round(filteredCountryTableData[i].value * 100) / 100 + '\xB0C');
         })
         .on("mousemove", function() { //Move tooltip with mouse
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
@@ -482,15 +720,15 @@ async function all_city_circles(minDiff, sortEnum, useLastMin, useLastSortEnum) 
 
     //Filter data first by min diff
     filteredCityTableData = cityDiffs.filter(item => item.value >= minDiff);
-
+    console.log(cityDiffs);
 
     //Check enum to sort
     var btn = document.querySelector('#sortCitiesBtn');
     if (sortEnum == 0) { //A to Z
-        filteredCityTableData.sort((a,b) => a.city.localeCompare(b.city));
+        filteredCityTableData.sort((a,b) => a.location.localeCompare(b.location));
         btn.innerHTML = 'Sort cities: Alphabetic (A to Z)';
     } else if (sortEnum == 1) { //Z to A
-        filteredCityTableData.sort((a,b) => a.city.localeCompare(b.city));
+        filteredCityTableData.sort((a,b) => a.location.localeCompare(b.location));
         filteredCityTableData.reverse();
         btn.innerHTML = 'Sort cities: Alphabetic (Z to A)';
     } else if (sortEnum == 2) { //Diff increasing
@@ -551,7 +789,7 @@ async function all_city_circles(minDiff, sortEnum, useLastMin, useLastSortEnum) 
             tooltip.style("opacity", 1)
                 .style("top", (d3.event.pageY-10)+"px")
                 .style("left",(d3.event.pageX+10)+"px")
-                .html(filteredCityTableData[i].city + '<br>Diff: ' + Math.round(filteredCityTableData[i].value * 100) / 100 + '\xB0C');
+                .html(filteredCityTableData[i].location + '<br>Diff: ' + Math.round(filteredCityTableData[i].value * 100) / 100 + '\xB0C');
         })
         .on("mousemove", function() { //Move tooltip with mouse
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
@@ -567,16 +805,16 @@ async function all_city_circles(minDiff, sortEnum, useLastMin, useLastSortEnum) 
     container.selectAll("text")
         .data(tableData)
         .enter().append("text")
-        .text(function(d,i) { return filteredCityTableData[i].city.substring(0, 5); })
+        .text(function(d,i) { return filteredCityTableData[i].location.substring(0, 5); })
         .attr("x", function(d) {return (x(d % numCityCols)*1.599)-18;})
         .attr("y", function(d) {return (y(Math.floor(d / numCityCols)))+5;})
-        .attr("opacity", function(d, i) {return circleOpacity(d.Diff);})
+        .attr("opacity", function(d, i) {return circleOpacity(d.value);})
         .attr("font-family","Franklin Gothic")
         .on("mouseover", function(d,i) { //Mouseover for tooltip
             tooltip.style("opacity", 1)
             .style("top", (d3.event.pageY-10)+"px")
             .style("left",(d3.event.pageX+10)+"px")
-            .html(filteredCityTableData[i].city + '<br>Diff: ' + Math.round(filteredCityTableData[i].value * 100) / 100 + '\xB0C');
+            .html(filteredCityTableData[i].location + '<br>Diff: ' + Math.round(filteredCityTableData[i].value * 100) / 100 + '\xB0C');
         })
         .on("mousemove", function() { //Move tooltip with mouse
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
@@ -590,535 +828,7 @@ async function all_city_circles(minDiff, sortEnum, useLastMin, useLastSortEnum) 
 }
 
 
-//Create a line graph for a specific country, along with the global average over time to compare
-/************************************************ 
- * Function to lay out line chart of temperature in celsius
- * for a country from 1860 to 2010. This chart includes
- * a gradient based on the minimum/maximum of that country's
- * temperature, and scatter points for tool tips.
- * 
- * 
- * params: idx - This is the index of the country from the countryDiffs array.
- * returns: None
-************************************************/
-async function createLineGraphsForCountry(idx) {
-    const country = filteredCountryTableData[idx].Country
-    const offset = 60;
-    const scatterDelta = 5;
-
-    //Get country data and sort by year
-    let countryData = countryAvgs.filter(item => item.country == country);
-    countryData.sort((a,b) => a.year - b.year);
-    
-    //Create scatter plot data from country data
-    var scatterData = [];
-    for (i = 0; i < countryData.length; i=i+scatterDelta) {
-        scatterData.push(countryData[i]);
-      }
-
-    //Combine global data and country data into one array to get min/max scale for y axis
-    var allTemps = [];
-    for (i = 0; i < countryData.length; i++)
-        allTemps.push(countryData[i].value);
-
-    const min = d3.min(allTemps);
-    const max = d3.max(allTemps);
-    // for (i = 0; i < globalAvgs.length; i++)
-    //     allTemps.push(globalAvgs[i].value);
-
-    //Get svg, clear conents
-    var svg = d3.select(countryGraphSvgID);
-    svg.selectAll("*").remove();
-
-    //Group for sub elements
-    const g = svg.append("g")
-        .attr("transform", "translate(" + offset + "," + 0 + ")");
-
-
-    //Add title to chart
-    var textSize = country.length >= 20 ? "16px" : "18px";
-    var x_title = country.length >= 20 ? 260 : 225;
-    console.log(country.length, textSize, x_title);
-    svg.append("text")
-        .attr("x", x_title)             
-        .attr("y", 40)
-        .attr("text-anchor", "middle")  
-        .style("font-size", textSize) 
-        .style("text-decoration", "underline")  
-        .text(country + " Rolling Temperature Average");
-
-    var x = d3.scaleTime()
-        .domain(d3.extent(countryData, function(d) { return d.year; }))
-        .range([ 0, chartSize ]);
-    var y = d3.scaleLinear()
-        .domain([d3.min(allTemps), d3.max(allTemps)])
-        .range([ chartSize, 0 ]);
-    
-    //Add X axis
-    svg.append("g")
-        .attr("transform", "translate(" + offset + "," + chartSize + ")")
-        .style("font", "14px times")
-        .attr('width', chartSize)
-        .attr('height', chartSize)
-        .call(d3.axisBottom(x))
-        .append("text")
-        .attr("fill", "black")
-        .style("font", "14px times")
-        .attr("transform", "translate(" + -40 + "," + -(chartSize/2) + ")rotate(270)")
-        .text('10 year average temperature (\xB0C)');
-
-    //Add Y axis
-    svg.append("g")
-        .attr("transform", "translate(" + offset + ",0)")
-        .style("font", "14px times")
-        .call(d3.axisLeft(y))
-        .append("text")
-        .attr("fill", "black")
-        .style("font", "14px times")
-        .attr("transform", "translate(" + (chartSize/2) + "," + (chartSize+50) + ")")
-        .text("Year");
-
-    //Y axis gridline
-    g.append("g")
-        .attr("class", "y-axis-grid")
-        .attr("stroke-width", 0.1)
-        .call(
-          d3.axisLeft(y)
-            .tickSize(-chartSize)
-            .tickFormat("")
-            .ticks(5)
-    
-        );
-    
-    //Set the gradient for the line
-    svg.append("linearGradient")
-        .attr("id", "line-gradient-countries")
-        .attr("gradientUnits", "userSpaceOnUse")
-        .attr("x1", 0)
-        .attr("y1", y(min))
-        .attr("x2", 0)
-        .attr("y2", y(max))
-        .selectAll("stop")
-        .data([
-            {offset: "0%", color: 'orange'},
-            {offset: "100%", color: 'red'}
-        ])
-        .enter().append("stop")
-        .attr("offset", function(d) { return d.offset; })
-        .attr("stop-color", function(d) { return d.color; });
-
-
-    //Add the line for country data
-    svg.append("path")
-        .datum(countryData)
-        .attr("fill", "none")
-        .attr("stroke", "url(#line-gradient-countries)" )
-        .attr("stroke-width", 2)
-        .attr("d", d3.line()
-        .x(function(d) { return x(d.year)+offset })
-        .y(function(d) { return y(d.value) })
-    );
-
-    //Add scatter points for tool tips
-    var tooltip = d3.select("#tooltip")
-    svg.append("g")
-        .selectAll("dot")
-        .data(scatterData)
-        .enter()
-        .append("circle")
-        .attr("cx", function(d) { return x(d.year)+offset } )
-        .attr("cy", function(d) { return y(d.value) } )
-        .attr("r", 5)
-        .attr("fill", "#581845")
-        .on("mouseover", function(d,i) {
-            diff = Math.round((scatterData[i].value - scatterData[0].value) * 100) / 100;
-            if (diff > 0) {
-                diff = '+' + diff;
-            }
-            tooltip.style("opacity", 1)
-            .style("top", (d3.event.pageY-10)+"px")
-            .style("left",(d3.event.pageX+10)+"px")
-            .html(country + '<br>Year ' + scatterData[i].year.getFullYear() + '<br>' + Math.round(scatterData[i].value*100)/100 + '\xB0C (' + diff + '\xB0C)');
-        })
-        .on("mousemove", function() {
-            return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
-        })
-        .on("mouseout", function() {
-            tooltip.style("opacity", 0)
-                .style("top", "0px")
-                .style("left", "0px")
-        })
-    // .on("click", transitionToCountryGraph);
-    
-    //Add color legend - not supported natively :(
-    // var colorScale = d3.scaleLinear()
-    //     .domain([0,500])
-    //     .range(["red", "blue"]);
-
-    // var legend = d3.legendColor()
-    //     .scale(colorScale);
-    
-    // svg.append("g")
-    //     .attr("transform", "translate(500,10)")
-    //     .call(legend);
-
-    //Create temp objects for annotations
-    var highestTempObj = countryData.reduce(function(prev, current) {
-        if (+current.value > +prev.value) {
-            return current;
-        } else {
-            return prev;
-        }
-    });
-
-    var tempObj1900 = countryData.filter(x => x.year.getFullYear() == 1900)[0];
-    var tempObj1950 = countryData.filter(x => x.year.getFullYear() == 1950)[0];
-    var tempObj2000 = countryData.filter(x => x.year.getFullYear() == 2000)[0];
-
-    const timeFormat = d3.timeFormat("%y");
-    const parseTime = d3.timeParse("%y");
-    const type = d3.annotationLabel;
-    const annotations = [
-        {
-            note: {
-                label: "Hottest temp (" + highestTempObj.year.getFullYear() + "): " + Math.round(highestTempObj.value*100)/100 + "\xB0C",
-                wrap: 150
-            },
-            connector: {
-                end: "dot" // 'dot' also available
-            },
-            dy: 25,
-            dx: -300,
-            x: x(highestTempObj.year)+offset,
-            y: y(highestTempObj.value),
-        },
-        {
-            note: {
-                label: "Year 1900: " + Math.round(tempObj1900.value*100)/100 + "\xB0C",
-                bgPadding: 5,
-            },
-            connector: {
-                end: "dot" // 'dot' also available
-            },
-            dy: -100,
-            dx: -100,
-            x: x(tempObj1900.year)+offset,
-            y: y(tempObj1900.value)
-        },
-        {
-            note: {
-                label: "Year 1950: " + Math.round(tempObj1950.value*100)/100 + "\xB0C",
-                bgPadding: 5
-            },
-            connector: {
-                end: "dot" // 'dot' also available
-            },
-            dy: -100,
-            dx: -100,
-            x: x(tempObj1950.year)+offset,
-            y: y(tempObj1950.value)
-        },
-        {
-            note: {
-                label: "Year 2000: " + Math.round(tempObj2000.value*100)/100 + "\xB0C",
-                bgPadding: 5
-            },
-            connector: {
-                end: "dot" // 'dot' also available
-            },
-            dy: -50,
-            dx: -100,
-            x: x(tempObj2000.year)+offset,
-            y: y(tempObj2000.value)
-        }
-
-    ];
-
-    const makeAnnotations = d3.annotation()
-        .editMode(true)
-        .notePadding(15)
-        .type(type)
-        
-        .accessors({
-            x: d => x(parseTime(d.year)),
-            y: d => y(d.value)
-        })
-        .accessorsInverse({
-            date: d => timeFormat(x.invert(d.x)),
-            close: d => y.invert(d.y)
-        })
-        .annotations(annotations)
-
-    svg.append("g")
-        .attr("class", "annotation-group")
-        .call(makeAnnotations)
-}
-
-
-
-//Create a line graph for a specific country, along with the global average over time to compare
-/************************************************ 
- * Function to lay out line chart of temperature in celsius
- * for a city from 1860 to 2010. This chart includes
- * a gradient based on the minimum/maximum of that city's
- * temperature, and scatter points for tool tips.
- * 
- * 
- * params: idx - This is the index of the city from the cityDiffs array.
- * returns: None
-************************************************/
-async function createLineGraphsForCity(idx) {
-    const city = filteredCityTableData[idx].city
-    const offset = 60;
-    const scatterDelta = 5;
-
-    //Get city data and sort by year
-    let cityData = cityAvgs.filter(item => item.city == city);
-    cityData.sort((a,b) => a.year - b.year);
-    
-    // console.log(cityData)
-    //Create scatter plot data from city data
-    var scatterData = [];
-    for (i = 0; i < cityData.length; i=i+scatterDelta) {
-        scatterData.push(cityData[i]);
-      }
-
-    //Combine global data and city data into one array to get min/max scale for y axis
-    var allTemps = [];
-    for (i = 0; i < cityData.length; i++)
-        allTemps.push(cityData[i].value);
-
-    const min = d3.min(allTemps);
-    const max = d3.max(allTemps);
-    // for (i = 0; i < globalAvgs.length; i++)
-    //     allTemps.push(globalAvgs[i].value);
-
-    //Get svg, clear conents
-    var svg = d3.select(cityGraphSvgID);
-    svg.selectAll("*").remove();
-
-    //Group for sub elements
-    const g = svg.append("g")
-        .attr("transform", "translate(" + offset + "," + 0 + ")");
-
-    //Add title to chart
-    var textSize = city.length >= 20 ? "16px" : "18px";
-    var x_title = city.length >= 20 ? 260 : 225;
-    console.log(city.length, textSize, x_title);
-    svg.append("text")
-        .attr("x", x_title)             
-        .attr("y", 40)
-        .attr("text-anchor", "middle")  
-        .style("font-size", textSize) 
-        .style("text-decoration", "underline")  
-        .text(city + " Rolling Temperature Average");
-
-    var x = d3.scaleTime()
-        .domain(d3.extent(cityData, function(d) { return d.year; }))
-        .range([ 0, chartSize ]);
-    var y = d3.scaleLinear()
-        .domain([d3.min(allTemps), d3.max(allTemps)])
-        .range([ chartSize, 0 ]);
-    
-    //Add X axis
-    svg.append("g")
-        .attr("transform", "translate(" + offset + "," + chartSize + ")")
-        .style("font", "14px times")
-        .attr('width', chartSize)
-        .attr('height', chartSize)
-        .call(d3.axisBottom(x))
-        .append("text")
-        .attr("fill", "black")
-        .style("font", "14px times")
-        .attr("transform", "translate(" + -40 + "," + -(chartSize/2) + ")rotate(270)")
-        .text('10 year average temperature (\xB0C)');
-
-    //Add Y axis
-    svg.append("g")
-        .attr("transform", "translate(" + offset + ",0)")
-        .style("font", "14px times")
-        .call(d3.axisLeft(y))
-        .append("text")
-        .attr("fill", "black")
-        .style("font", "14px times")
-        .attr("transform", "translate(" + (chartSize/2) + "," + (chartSize+50) + ")")
-        .text("Year");
-
-    //Y axis gridline
-    g.append("g")
-        .attr("class", "y-axis-grid")
-        .attr("stroke-width", 0.1)
-        .call(
-            d3.axisLeft(y)
-                .tickSize(-chartSize)
-                .tickFormat("")
-                .ticks(5)
-    
-        );
-    
-    //Set the gradient for the line
-    svg.append("linearGradient")
-        .attr("id", "line-gradient-city")
-        .attr("gradientUnits", "userSpaceOnUse")
-        .attr("x1", 0)
-        .attr("y1", y(min))
-        .attr("x2", 0)
-        .attr("y2", y(max))
-        .selectAll("stop")
-        .data([
-            {offset: "0%", color: 'orange'},
-            {offset: "100%", color: 'red'}
-        ])
-        .enter().append("stop")
-        .attr("offset", function(d) { return d.offset; })
-        .attr("stop-color", function(d) { return d.color; });
-
-
-    //Add the line for country data
-    svg.append("path")
-        .datum(cityData)
-        .attr("fill", "none")
-        .attr("stroke", "url(#line-gradient-city)" )
-        .attr("stroke-width", 2)
-        .attr("d", d3.line()
-            .x(function(d) { return x(d.year)+offset })
-            .y(function(d) { return y(d.value) })
-    );
-
-    //Add scatter points for tool tips
-    var tooltip = d3.select("#tooltip")
-    svg.append("g")
-        .selectAll("dot")
-        .data(scatterData)
-        .enter()
-        .append("circle")
-        .attr("cx", function(d) { return x(d.year)+offset } )
-        .attr("cy", function(d) { return y(d.value) } )
-        .attr("r", 5)
-        .attr("fill", "#581845")
-        .on("mouseover", function(d,i) {
-            diff = Math.round((scatterData[i].value - scatterData[0].value) * 100) / 100;
-            if (diff > 0) {
-                diff = '+' + diff;
-            }
-            tooltip.style("opacity", 1)
-            .style("top", (d3.event.pageY-10)+"px")
-            .style("left",(d3.event.pageX+10)+"px")
-            .html(city + '<br>Year ' + scatterData[i].year.getFullYear() + '<br>' + Math.round(scatterData[i].value*100)/100 + '\xB0C (' + diff + '\xB0C)');
-        })
-        .on("mousemove", function() {
-            return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
-        })
-        .on("mouseout", function() {
-            tooltip.style("opacity", 0)
-                .style("top", "0px")
-                .style("left", "0px")
-        })
-        
-    // Add color legend - not supported natively :(
-    // var colorScale = d3.scaleLinear()
-    //     .domain([0,500])
-    //     .range(["red", "blue"]);
-
-    // var legend = d3.legendColor()
-    //     .scale(colorScale);
-    
-    // svg.append("g")
-    //     .attr("transform", "translate(500,10)")
-    //     .call(legend);
-
-    //Create temp objects for annotations
-    var highestTempObj = cityData.reduce(function(prev, current) {
-        if (+current.value > +prev.value) {
-            return current;
-        } else {
-            return prev;
-        }
-    });
-
-    var tempObj1900 = cityData.filter(x => x.year.getFullYear() == 1900)[0];
-    var tempObj1950 = cityData.filter(x => x.year.getFullYear() == 1950)[0];
-    var tempObj2000 = cityData.filter(x => x.year.getFullYear() == 2000)[0];
-
-    const timeFormat = d3.timeFormat("%y");
-    const parseTime = d3.timeParse("%y");
-    const type = d3.annotationLabel;
-    const annotations = [
-        {
-            note: {
-                label: "Hottest temp (" + highestTempObj.year.getFullYear() + "): " + Math.round(highestTempObj.value*100)/100 + "\xB0C",
-                wrap: 150
-            },
-            connector: {
-                end: "dot" // 'dot' also available
-            },
-            dy: 25,
-            dx: -300,
-            x: x(highestTempObj.year)+offset,
-            y: y(highestTempObj.value),
-        },
-        {
-            note: {
-                label: "Year 1900: " + Math.round(tempObj1900.value*100)/100 + "\xB0C",
-                bgPadding: 5,
-            },
-            connector: {
-                end: "dot" // 'dot' also available
-            },
-            dy: -100,
-            dx: -100,
-            x: x(tempObj1900.year)+offset,
-            y: y(tempObj1900.value)
-        },
-        {
-            note: {
-                label: "Year 1950: " + Math.round(tempObj1950.value*100)/100 + "\xB0C",
-                bgPadding: 5
-            },
-            connector: {
-                end: "dot" // 'dot' also available
-            },
-            dy: -100,
-            dx: -100,
-            x: x(tempObj1950.year)+offset,
-            y: y(tempObj1950.value)
-        },
-        {
-            note: {
-                label: "Year 2000: " + Math.round(tempObj2000.value*100)/100 + "\xB0C",
-                bgPadding: 5
-            },
-            connector: {
-                end: "dot" // 'dot' also available
-            },
-            dy: -50,
-            dx: -100,
-            x: x(tempObj2000.year)+offset,
-            y: y(tempObj2000.value)
-        }
-
-    ];
-
-    const makeAnnotations = d3.annotation()
-        .editMode(true)
-        .notePadding(15)
-        .type(type)
-        
-        .accessors({
-            x: d => x(parseTime(d.year)),
-            y: d => y(d.value)
-        })
-        .accessorsInverse({
-            date: d => timeFormat(x.invert(d.x)),
-            close: d => y.invert(d.y)
-        })
-        .annotations(annotations)
-
-    svg.append("g")
-        .attr("class", "annotation-group")
-        .call(makeAnnotations)
-}
-
+//==============================================================================================
 
 /************************************************ 
  * In order to keep each circle the same size, Alpha-3 country
@@ -1146,8 +856,22 @@ function getCountryCode(countryName) {
  * params: d - The dataset to process.
  * returns: None
 ************************************************/
+function processCountryDiff(d) {
+    return {location: d.Country, 
+            value: Number(d.Diff)};
+}
+
+/************************************************ 
+ * Maps a dataset when loading in to only use the
+ * year, country, and temperature. Also casts each
+ * variable to the appropriate type.
+ * 
+ * 
+ * params: d - The dataset to process.
+ * returns: None
+************************************************/
 function processData(d) {
-    return {country: d.Country, 
+    return {location: d.Country, 
             year: d3.timeParse("%Y")(d.Year), 
             value: Number(d.AverageTemperatureRolling),
             uncertainty: Number(d.AverageTemperatureUncertaintyRolling)};
@@ -1164,7 +888,7 @@ function processData(d) {
  * returns: None
 ************************************************/
 function processDataCity(d) {
-    return {city: d.City, 
+    return {location: d.City, 
             year: d3.timeParse("%Y")(d.Year), 
             value: Number(d.AverageTemperatureRolling),
             uncertainty: Number(d.AverageTemperatureUncertaintyRolling)};
@@ -1180,7 +904,7 @@ function processDataCity(d) {
  * returns: None
 ************************************************/
 function processDataCityDiff(d) {
-    return {city: d.City, 
+    return {location: d.City, 
             value: Number(d.Diff)}
 }
 
@@ -1198,6 +922,9 @@ function processGlobalData(d) {
             value: Number(d.LandAverageTemperatureRolling),
             uncertainty: Number(d.LandAverageTemperatureUncertaintyRolling)};
 }
+
+//==============================================================================================
+
 
 /************************************************ 
  * Transitions from the global line graph view back to the
@@ -1427,7 +1154,8 @@ function transitionToCountryGraph(d, i) {
     d3.event.stopPropagation();
     
     //Create new graphs
-    createLineGraphsForCountry(i)
+    // function createLineGraph(dataSource, locationFilter, svgID, lineGradientID) {
+    createLineGraph(countryAvgs, filteredCountryTableData[i].location, countryGraphSvgID, "line-gradient-countries")
 }
 
 /************************************************ 
@@ -1466,7 +1194,7 @@ function transitionToCityGraph(d, i) {
     d3.event.stopPropagation();
     
     //Create new graphs
-    createLineGraphsForCity(i)
+    createLineGraph(cityAvgs, filteredCityTableData[i].location, cityGraphSvgID, "line-gradient-cities")
 }
 
 
@@ -1535,3 +1263,4 @@ function transitionToCityCircles() {
                 .attr("transform", "translate(0,0)");     
         });
 }
+//==============================================================================================

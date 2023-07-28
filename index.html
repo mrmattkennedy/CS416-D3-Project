@@ -16,6 +16,33 @@
   <!-- Tool tip for data available to user -->
   <div id="tooltip"></div>
 
+
+  
+  <!-- This div holds the graph that shows rolling average temp for global averages -->
+  <div id="globalSvgHolder" class="svgHolder">
+    <p class="info-p">Listed below is a graph of 10 year average rolling temperatures (&degC) from 1860 to 2010.</p>
+    <p class="info-p">Selecting <b>"View warming countries"</b> will show the difference in average temperature from 1860 to 2010 for over 150 countries.</p>
+    <p class="info-p">Selecting <b>"View warming major cities"</b> will show the difference in average temperature from 1860 to 2010 for over 50 major cities.</p>
+    <div>
+      <button onclick="transitionToCountryCirclesFromGlobal()">View warming countries</button> 
+      <button onclick="transitionToCityCirclesFromGlobal()">View warming major cities</button> 
+    </div>
+    <br>
+    <svg id="global-warming-graph" height="900" width="900">
+      <defs>
+        <clipPath id="circleView">
+            <circle cx="400" cy="400" r="500"/>
+        </clipPath>
+      </defs>
+      <image 
+        width="500" 
+        height="250" 
+        xlink:href="https://t3.ftcdn.net/jpg/05/14/75/82/240_F_514758236_i8rnB85PVdEaK19yGaK0TpaYEYMyxOL5.jpg" 
+        clip-path="url(#circleView)"
+      />
+    </svg>
+  </div>
+
   <!-- This div holds the country circles that a user can click on -->
   <div id="countryCirclesSvgHolder" class="svgHolder">
     <p class="info-p">Listed below is table of countries, listed as 3 letter codes within circles, and the color directly correlates to the average country temperature difference in &degC from 1860 to 2010.</p>
@@ -103,19 +130,6 @@
     <button onclick="transitionToCityCircles()">Return to all cities</button> 
     <br>
     <svg id="city-warming-graph" height="900" width="900"></svg>
-  </div>
-
-  <!-- This div holds the graph that shows rolling average temp for global averages -->
-  <div id="globalSvgHolder" class="svgHolder">
-    <p class="info-p">Listed below is a graph of 10 year average rolling temperatures (&degC) from 1860 to 2010.</p>
-    <p class="info-p">Selecting <b>"View warming countries"</b> will show the difference in average temperature from 1860 to 2010 for over 150 countries.</p>
-    <p class="info-p">Selecting <b>"View warming major cities"</b> will show the difference in average temperature from 1860 to 2010 for over 50 major cities.</p>
-    <div>
-      <button onclick="transitionToCountryCirclesFromGlobal()">View warming countries</button> 
-      <button onclick="transitionToCityCirclesFromGlobal()">View warming major cities</button> 
-    </div>
-    <br>
-    <svg id="global-warming-graph" height="900" width="900"></svg>
   </div>
 
   <!-- Loading the JS -->
