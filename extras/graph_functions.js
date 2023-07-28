@@ -1,7 +1,7 @@
 //Add annotations to first page and information
 //Add annotations and information to second page
-//Do I need a legend for the graph?
-//3rd page.... ?
+//Do I need a legend for the graph? - Not supported natively
+//change home page to be a graph of global trends, then add buttons to view city circles or country circles
 
 /*
 * Annotations - 1 is hottest point, do 1 for 1900, 1950, 2000 vs global average
@@ -22,9 +22,8 @@ let mainSvgID = '#global-warming-graph';
 let countrySvgID = '#country-warming-graph';
 
 //Load larger data in now
-var rawData, countryCodes, countryAvgs, filteredTableData;
+var rawData, countryCodes, countryAvgs, filteredTableData, globalAvgs;
 var avgMin, avgMax;
-// var globalAvgs;
 
 //Some constants
 const tableSize = 1000;
@@ -38,6 +37,30 @@ const numCols = 19;
 const startColor = 'ghostwhite';
 const endColor = 'darkOrange'
 var lastMin;
+
+
+async function globalTempDifferences() {
+    if (rawData === undefined || countryCodes === undefined || countryAvgs === undefined) {
+        //First, load the data in now so it's only loaded once
+        rawData = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
+        countryCodes = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CountryCodes.csv');
+        countryAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingAverageCountry.csv', processData);
+        globalAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingTemperatures.csv', processData);
+
+        // Sort global averages now so it's only done once
+        globalAvgs.sort((a,b) => a.year - b.year);
+
+        //Get min and max
+        var allTemps = [];
+        for (i = 0; i < countryAvgs.length; i++)
+            allTemps.push(countryAvgs[i].value);
+
+        avgMin = d3.min(allTemps);
+        avgMax = d3.max(allTemps);
+    }
+}
+
+
 /************************************************ 
  * Function to create the initial circles as part of the martini glass view.
  * Each circle has text overlaying it with the 3 digit country code
@@ -52,24 +75,6 @@ var lastMin;
  * returns: None
 ************************************************/
 async function all_country_circles(minDiff, sortEnum, useLastMin) {
-    if (rawData === undefined || countryCodes === undefined || countryAvgs === undefined) {
-        //First, load the data in now so it's only loaded once
-        rawData = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
-        countryCodes = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CountryCodes.csv');
-        countryAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingAverageCountry.csv', processData);
-        // globalAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingTemperatures.csv', processData);
-        //Sort global averages now so it's only done once
-        // globalAvgs.sort((a,b) => a.year - b.year);
-
-        //Get min and max
-        var allTemps = [];
-        for (i = 0; i < countryAvgs.length; i++)
-            allTemps.push(countryAvgs[i].value);
-
-        avgMin = d3.min(allTemps);
-        avgMax = d3.max(allTemps);
-    }
-
     //Get tooltip element
     var tooltip = d3.select("#tooltip")
 
