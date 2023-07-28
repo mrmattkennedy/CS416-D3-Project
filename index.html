@@ -12,18 +12,33 @@
 
 <body style="width:100%;height:100%;margin:0;background:#FBFAF5;">
   <h1>Global Warming From 1860 to 2010</h1>
-
+  <br>
   <!-- Tool tip for data available to user -->
   <div id="tooltip"></div>
 
   <!-- This div holds the circles that a user can click on -->
   <div id="mainSvgHolder">
+
     <div id="mainSvgFilters">
-      <div class="slidecontainer">
-        <div class="slider"><input type="range" min="0" max="2.7" step="0.1" value="0" oninput="rangeValue.innerText = this.value"><p id="rangeValue">0</p></div> 
+      <!-- Filter for minimum diff in temp -->
+      <label style="margin-left: 10px;">Minimum difference in &degC from 1860 to 2010 : </label>
+      <input id='minDiff' type="range" min="0" max="2.7" step="0.1" value="0" oninput="rangeValue.innerText=this.value" onchange="all_country_circles(this.value)">
+      <label for="minDiff" id="rangeValue" style="margin-right: 10px;">0</label>
+      
+      <br>
+      <!-- Dropdown for sorting alphabetically or by temp -->
+      <div class="dropdown">
+        <button class="dropbtn">Sort countries</button>
+        <div class="dropdown-content">
+          <a onclick="all_country_circles(0.0, 0, true)">Alphabetically (A to Z)</a>
+          <a onclick="all_country_circles(0.0, 1, true)">Alphabetically (Z to A)</a>
+          <a onclick="all_country_circles(0.0, 2, true)">By &degC difference (increasing)</a>
+          <a onclick="all_country_circles(0.0, 3, true)">By &degC difference (decreasing)</a>
+        </div>
       </div>
     </div>
 
+    <br>
     <svg id="global-warming-graph" height="1100" width="1600"></svg>
   </div>
 
@@ -35,7 +50,7 @@
   </div>
 
   <!-- Loading the JS -->
-  <script src="extras/graph_functions.js" onload="all_country_circles();"></script>
+  <script src="extras/graph_functions.js" onload="all_country_circles(0.0, 0, false);"></script>
 
 </body>
 

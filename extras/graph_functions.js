@@ -2,9 +2,7 @@
 //Add annotations to first page and information
 //Add annotations and information to second page
 //Do I need a legend for the graph?
-//Change page icon
 //3rd page.... ?
-//Try the filters :(
 
 /*
 * Annotations - 1 is hottest point, do 1 for 1900, 1950, 2000 vs global average
@@ -25,7 +23,7 @@ let mainSvgID = '#global-warming-graph';
 let countrySvgID = '#country-warming-graph';
 
 //Load larger data in now
-var rawData, countryCodes, countryAvgs;
+var rawData, countryCodes, countryAvgs, filteredTableData;
 var avgMin, avgMax;
 // var globalAvgs;
 
@@ -36,11 +34,11 @@ const transitionSize = 1100;
 const circleDomainMin = 1.0;
 const circleDomainMax = 1.8;
 const diffMean = 1.55;
-const numRows = 8;
+var numRows;
 const numCols = 19;
 const startColor = 'ghostwhite';
 const endColor = 'darkOrange'
-
+var lastMin;
 /************************************************ 
  * Function to create the initial circles as part of the martini glass view.
  * Each circle has text overlaying it with the 3 digit country code
@@ -50,30 +48,55 @@ const endColor = 'darkOrange'
  * rolling temperature of 10 years from 1860 to 2010, as well as another line
  * showing the global average rolling temp of 10 years from 1860 to 2010.
  * 
- * params: None
+ * params: minDiff, the minimum difference to filter, sortEnum, 0 is A to Z, 
+ *  1 is Z to A, 2 is diff increasing, 3 is diff decreasing
  * returns: None
 ************************************************/
-async function all_country_circles() {
-    //First, load the data in now so it's only loaded once
-    rawData = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
-    countryCodes = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CountryCodes.csv');
-    countryAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingAverageCountry.csv', processData);
-    // globalAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingTemperatures.csv', processData);
-    //Sort global averages now so it's only done once
-    // globalAvgs.sort((a,b) => a.year - b.year);
+async function all_country_circles(minDiff, sortEnum, useLastMin) {
+    if (rawData === undefined || countryCodes === undefined || countryAvgs === undefined) {
+        //First, load the data in now so it's only loaded once
+        rawData = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
+        countryCodes = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CountryCodes.csv');
+        countryAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingAverageCountry.csv', processData);
+        // globalAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingTemperatures.csv', processData);
+        //Sort global averages now so it's only done once
+        // globalAvgs.sort((a,b) => a.year - b.year);
 
-    //Get min and max
-    var allTemps = [];
-    for (i = 0; i < countryAvgs.length; i++)
-        allTemps.push(countryAvgs[i].value);
+        //Get min and max
+        var allTemps = [];
+        for (i = 0; i < countryAvgs.length; i++)
+            allTemps.push(countryAvgs[i].value);
 
-    avgMin = d3.min(allTemps);
-    avgMax = d3.max(allTemps);
+        avgMin = d3.min(allTemps);
+        avgMax = d3.max(allTemps);
+    }
 
+    //Get tooltip element
     var tooltip = d3.select("#tooltip")
 
-    //Next, create a grid for the circles representing the countries (151 in total) 
-    var tableData = d3.range(numCols*numRows).slice(0, -1); //Remove last 1 items to match data
+    //Check if useLastMin
+    minDiff = (useLastMin) ? lastMin : minDiff;
+    lastMin = minDiff;
+
+    //Filter data first by min diff
+    filteredTableData = rawData.filter(item => item.Diff >= minDiff);
+
+    //Check enum to sort
+    if (sortEnum == 0) { //A to Z
+        filteredTableData.sort((a,b) => a.Country.localeCompare(b.Country));
+    } else if (sortEnum == 1) { //Z to A
+        filteredTableData.sort((a,b) => a.Country.localeCompare(b.Country));
+        filteredTableData.reverse();
+    } else if (sortEnum == 2) { //Diff increasing
+        filteredTableData.sort((a,b) => a.Diff - b.Diff);
+    } else if (sortEnum == 3) { //Diff decreasing
+        filteredTableData.sort((a,b) => a.Diff - b.Diff);
+        filteredTableData.reverse();
+    }
+
+    //Next, create a grid for the circles representing the countries
+    numRows = Math.ceil(filteredTableData.length / numCols);
+    var tableData = d3.range(numCols*numRows).slice(0, -((numCols*numRows)-filteredTableData.length));
 
     //Create x and y scale for circles
     var x = d3.scaleBand()
@@ -86,6 +109,7 @@ async function all_country_circles() {
 
     //Get svg and it's width/height on the screen
     var svg = d3.select(mainSvgID);
+    svg.selectAll("*").remove();
     
     //Create a container and center it
     var container = svg.append("g")
@@ -113,14 +137,14 @@ async function all_country_circles() {
         .enter().append("circle")
         .attr('cx', function(d) {return x(d % numCols)*1.6;})
         .attr('cy', function(d) {return y(Math.floor(d / numCols));})
-        .attr('r', function(d, i) {return 35 + (parseFloat(rawData[i].Diff) - diffMean)*10;})
-        .attr('fill', function(d, i) {return circleColors(parseFloat(rawData[i].Diff));})
+        .attr('r', function(d, i) {return 35 + (parseFloat(filteredTableData[i].Diff) - diffMean)*10;})
+        .attr('fill', function(d, i) {return circleColors(parseFloat(filteredTableData[i].Diff));})
         .attr('stroke', 'black')
         .on("mouseover", function(d,i) { //Mouseover for tooltip
             tooltip.style("opacity", 1)
             .style("top", (d3.event.pageY-10)+"px")
             .style("left",(d3.event.pageX+10)+"px")
-            .html(rawData[i].Country + '<br>Diff: ' + Math.round(rawData[i].Diff * 100) / 100 + '\xB0C');
+            .html(filteredTableData[i].Country + '<br>Diff: ' + Math.round(filteredTableData[i].Diff * 100) / 100 + '\xB0C');
         })
         .on("mousemove", function() { //Move tooltip with mouse
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
@@ -129,11 +153,10 @@ async function all_country_circles() {
         .on("click", transitionToCountryGraph); //Transition to that country's graph on click
 
     //Fill circles with text
-    console.log(countryCodes)
     container.selectAll("text")
         .data(tableData)
         .enter().append("text")
-        .text(function(d,i) { return getCountryCode(rawData[i].Country, countryCodes); })
+        .text(function(d,i) { return getCountryCode(filteredTableData[i].Country, countryCodes); })
         .attr("x", function(d) {return (x(d % numCols)*1.601)-15;})
         .attr("y", function(d) {return (y(Math.floor(d / numCols)))+5;})
         .attr("opacity", function(d, i) {return circleOpacity(d.Diff);})
@@ -142,7 +165,7 @@ async function all_country_circles() {
             tooltip.style("opacity", 1)
             .style("top", (d3.event.pageY-10)+"px")
             .style("left",(d3.event.pageX+10)+"px")
-            .html(rawData[i].Country + '<br>Diff: ' + Math.round(rawData[i].Diff * 100) / 100 + '\xB0C');
+            .html(filteredTableData[i].Country + '<br>Diff: ' + Math.round(filteredTableData[i].Diff * 100) / 100 + '\xB0C');
         })
         .on("mousemove", function() { //Move tooltip with mouse
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
@@ -166,7 +189,7 @@ async function all_country_circles() {
  * returns: None
 ************************************************/
 async function createLineGraphsForCountry(idx) {
-    const country = rawData[idx].Country
+    const country = filteredTableData[idx].Country
     const offset = 60;
     const scatterDelta = 5;
 
