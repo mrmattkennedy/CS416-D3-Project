@@ -1,4 +1,3 @@
-//Go through GlobalRollingAverageCountry.csv and GlobalRollingTemperatures.csv and fix country names not in GlobalAverageDifference.
 //Add annotations to first page and information
 //Add annotations and information to second page
 //Do I need a legend for the graph?
@@ -142,14 +141,18 @@ async function all_country_circles(minDiff, sortEnum, useLastMin) {
         .attr('stroke', 'black')
         .on("mouseover", function(d,i) { //Mouseover for tooltip
             tooltip.style("opacity", 1)
-            .style("top", (d3.event.pageY-10)+"px")
-            .style("left",(d3.event.pageX+10)+"px")
-            .html(filteredTableData[i].Country + '<br>Diff: ' + Math.round(filteredTableData[i].Diff * 100) / 100 + '\xB0C');
+                .style("top", (d3.event.pageY-10)+"px")
+                .style("left",(d3.event.pageX+10)+"px")
+                .html(filteredTableData[i].Country + '<br>Diff: ' + Math.round(filteredTableData[i].Diff * 100) / 100 + '\xB0C');
         })
         .on("mousemove", function() { //Move tooltip with mouse
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
         })
-        .on("mouseout", function() {tooltip.style("opacity", 0)}) //When mouse leaves the space, remove the tooltip
+        .on("mouseout", function() {
+            tooltip.style("opacity", 0)
+                .style("top", "0px")
+                .style("left", "0px")
+        }) //When mouse leaves the space, remove the tooltip
         .on("click", transitionToCountryGraph); //Transition to that country's graph on click
 
     //Fill circles with text
@@ -170,7 +173,11 @@ async function all_country_circles(minDiff, sortEnum, useLastMin) {
         .on("mousemove", function() { //Move tooltip with mouse
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
         })
-        .on("mouseout", function() {tooltip.style("opacity", 0)}) //When mouse leaves the space, remove the tooltip
+        .on("mouseout", function() {
+            tooltip.style("opacity", 0)
+                .style("top", "0px")
+                .style("left", "0px")
+        })
         .on("click", transitionToCountryGraph); //Transition to that country's graph on click
 }
 
@@ -317,9 +324,24 @@ async function createLineGraphsForCountry(idx) {
         .on("mousemove", function() {
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
         })
-        .on("mouseout", function() {tooltip.style("opacity", 0)})
+        .on("mouseout", function() {
+            tooltip.style("opacity", 0)
+                .style("top", "0px")
+                .style("left", "0px")
+        })
         .on("click", transitionToCountryGraph);
-    
+        
+        //Add color legend - not supported natively :(
+        // var colorScale = d3.scaleLinear()
+        //     .domain([0,500])
+        //     .range(["red", "blue"]);
+
+        // var legend = d3.legendColor()
+        //     .scale(colorScale);
+        
+        // svg.append("g")
+        //     .attr("transform", "translate(500,10)")
+        //     .call(legend);
 
         const makeAnnotations = d3.annotation()
             .editMode(true)
