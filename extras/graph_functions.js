@@ -58,7 +58,7 @@ async function globalTempDifferences() {
         rawData = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalAverageDifference.csv');
         countryCodes = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CountryCodes.csv');
         countryAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingAverageCountry.csv', processData);
-        cityAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CityRollingTemperatures.csv', processData);
+        cityAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/CityRollingTemperatures.csv', processDataCity);
         globalAvgs = await d3.csv('https://raw.githubusercontent.com/mrmattkennedy/CS416-D3-Project/main/data/usable_data/GlobalRollingTemperatures.csv', processGlobalData);
 
         // Sort global averages now so it's only done once
@@ -728,6 +728,23 @@ function getCountryCode(countryName) {
 ************************************************/
 function processData(d) {
     return {country: d.Country, 
+            year: d3.timeParse("%Y")(d.Year), 
+            value: Number(d.AverageTemperatureRolling),
+            uncertainty: Number(d.AverageTemperatureUncertaintyRolling)};
+}
+
+
+/************************************************ 
+ * Maps a dataset when loading in to only use the
+ * year, city, and temperature. Also casts each
+ * variable to the appropriate type.
+ * 
+ * 
+ * params: d - The dataset to process.
+ * returns: None
+************************************************/
+function processDataCity(d) {
+    return {country: d.City, 
             year: d3.timeParse("%Y")(d.Year), 
             value: Number(d.AverageTemperatureRolling),
             uncertainty: Number(d.AverageTemperatureUncertaintyRolling)};
