@@ -18,13 +18,17 @@
 
   <!-- This div holds the country circles that a user can click on -->
   <div id="countryCirclesSvgHolder" class="svgHolder">
+    <p class="info-p">Listed below is table of countries, listed as 3 letter codes within circles, and the color directly correlates to the average country temperature difference in &degC from 1860 to 2010.</p>
+    <p class="info-p">Hovering over any circle will display the full country name and the difference in &degC from 1860 to 2010.</p>
+    <p class="info-p">Clicking on any circle will display a slide that shows a line graph of the 10 year rolling average temperature for that country in &degC from 1860 to 2010.</p>
+
     <div>
       <button onclick="transitionToGlobalFromCountryCircles()">View global graph</button> 
       <button onclick="transitionToCityCirclesFromCountryCircles()">View warming major cities</button> 
     </div>
     <br>
 
-    <div id="mainSvgFilters">
+    <div id="countrySvgHolder">
       <!-- Filter for minimum diff in temp -->
       <label style="margin-left: 10px;">Minimum difference in &degC from 1860 to 2010 : </label>
       <input id='minDiffCountry' type="range" min="0" max="2.7" step="0.1" value="0" oninput="rangeValueCountry.innerText=this.value" onchange="all_country_circles(this.value, 0, false, true)">
@@ -49,6 +53,9 @@
 
     <!-- This div holds the circles that a user can click on -->
   <div id="cityCirclesSvgHolder" class="svgHolder">
+    <p class="info-p">Listed below is table of major cities, listed as 4 to 5 letter abbreviations, and the color directly correlates to the average temperature for that city difference in &degC from 1860 to 2010.</p>
+    <p class="info-p">Hovering over any circle will display the full city name and the difference in &degC from 1860 to 2010.</p>
+    <p class="info-p">Clicking on any circle will display a slide that shows a line graph of the 10 year rolling average temperature for that city in &degC from 1860 to 2010.</p>
     <div>
       <button onclick="transitionToGlobalFromCityCircles()">View global graph</button> 
       <button onclick="transitionToCountryCirclesFromCityCircles()">View warming countries</button> 
@@ -80,6 +87,9 @@
 
   <!-- This div holds the graph that shows rolling average temp for a country over time -->
   <div id="countryGraphSvgHolder" class="svgHolder">
+    <p class="info-p">Listed below is a graph of 10 year average rolling temperatures (&degC) for a specific country from 1860 to 2010.</p>
+    <p class="info-p">Hovering over a scatter plot point will display the year, the temperature in &degC, and the difference in &degC since 1860.</p>
+    <p class="info-p">If an annotation is not easily visible, they can be dragged around to better spots.</p>
     <button onclick="transitionToCountryCircles()">Return to all countries</button> 
     <br>
     <svg id="country-warming-graph" height="900" width="900"></svg>
@@ -87,6 +97,9 @@
 
   <!-- This div holds the graph that shows rolling average temp for a city over time -->
   <div id="cityGraphSvgHolder" class="svgHolder">
+    <p class="info-p">Listed below is a graph of 10 year average rolling temperatures (&degC) for a specific city from 1860 to 2010.</p>
+    <p class="info-p">Hovering over a scatter plot point will display the year, the temperature in &degC, and the difference in &degC since 1860.</p>
+    <p class="info-p">If an annotation is not easily visible, they can be dragged around to better spots.</p>
     <button onclick="transitionToCityCircles()">Return to all cities</button> 
     <br>
     <svg id="city-warming-graph" height="900" width="900"></svg>
@@ -94,6 +107,9 @@
 
   <!-- This div holds the graph that shows rolling average temp for global averages -->
   <div id="globalSvgHolder" class="svgHolder">
+    <p class="info-p">Listed below is a graph of 10 year average rolling temperatures (&degC) from 1860 to 2010.</p>
+    <p class="info-p">Selecting <b>"View warming countries"</b> will show the difference in average temperature from 1860 to 2010 for over 150 countries.</p>
+    <p class="info-p">Selecting <b>"View warming major cities"</b> will show the difference in average temperature from 1860 to 2010 for over 50 major cities.</p>
     <div>
       <button onclick="transitionToCountryCirclesFromGlobal()">View warming countries</button> 
       <button onclick="transitionToCityCirclesFromGlobal()">View warming major cities</button> 

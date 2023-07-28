@@ -26,7 +26,7 @@ h1 {
     display: none;
 }
 
-#mainSvgFilters {
+#countrySvgHolder, #citySvgFilters {
     border: solid 1px #555;
     box-shadow:  0 0 10px  rgba(0,0,0,0.6);
     -moz-box-shadow: 0 0 10px  rgba(0,0,0,0.6);

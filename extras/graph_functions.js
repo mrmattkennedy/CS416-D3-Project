@@ -1,7 +1,4 @@
-//Add annotations to country circle page
-//Add annotations to city circle page
-//Add annotations to country graph page
-//Add annotation to city graph page
+//Add information to each page
 //Do I need a legend for the graph? - Not supported natively
 
 /*
@@ -100,6 +97,15 @@ async function globalTempDifferences() {
     //Group for sub elements
     const g = svg.append("g")
         .attr("transform", "translate(" + offset + "," + 0 + ")");
+
+    //Add title to chart
+    svg.append("text")
+        .attr("x", 240)             
+        .attr("y", 40)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "18px") 
+        .style("text-decoration", "underline")  
+        .text("Global Rolling Temperature Average (10 years)");
 
     var x = d3.scaleTime()
         .domain(d3.extent(globalData, function(d) { return d.year; }))
@@ -224,63 +230,58 @@ async function globalTempDifferences() {
                 return prev;
             }
         });
+        
+        var tempObj1900 = globalData.filter(x => x.year.getFullYear() == 1900)[0];
+        var tempObj1950 = globalData.filter(x => x.year.getFullYear() == 1950)[0];
+        var tempObj2000 = globalData.filter(x => x.year.getFullYear() == 2000)[0];
 
-        tempObj1900 = globalData.filter(x => x.year.getFullYear() == 1900)[0];
-        tempObj1950 = globalData.filter(x => x.year.getFullYear() == 1950)[0];
-        tempObj2000 = globalData.filter(x => x.year.getFullYear() == 2000)[0];
-
-        console.log(x(1900), x(1950))
         const timeFormat = d3.timeFormat("%y");
         const parseTime = d3.timeParse("%y")
         const type = d3.annotationLabel
         const annotations = [
             {
                 note: {
-                    label: Math.round(highestTempObj.value*100)/100 + "\xB0C",
-                    bgPadding: 5,
-                    title: "Hottest annual avg"
+                    label: "Hottest temp (" + highestTempObj.year.getFullYear() + "): " + Math.round(highestTempObj.value*100)/100 + "\xB0C",
+                    wrap: 150
                 },
                 connector: {
                     end: "dot" // 'dot' also available
                 },
                 dy: 50,
-                dx: -100,
+                dx: -125,
                 x: x(highestTempObj.year)+offset,
                 y: y(highestTempObj.value),
             },
             {
                 note: {
-                    label: Math.round(tempObj1900.value*100)/100 + "\xB0C",
+                    label: "Year 1900: " + Math.round(tempObj1900.value*100)/100 + "\xB0C",
                     bgPadding: 5,
-                    title: "Year 1900"
                 },
                 connector: {
                     end: "dot" // 'dot' also available
                 },
-                dy: -100,
-                dx: -100,
+                dy: -150,
+                dx: -10,
                 x: x(tempObj1900.year)+offset,
                 y: y(tempObj1900.value)
             },
             {
                 note: {
-                    label: Math.round(tempObj1950.value*100)/100 + "\xB0C",
-                    bgPadding: 5,
-                    title: "Year 1950"
+                    label: "Year 1950: " + Math.round(tempObj1950.value*100)/100 + "\xB0C",
+                    bgPadding: 5
                 },
                 connector: {
                     end: "dot" // 'dot' also available
                 },
-                dy: -100,
-                dx: -100,
+                dy: -150,
+                dx: -10,
                 x: x(tempObj1950.year)+offset,
                 y: y(tempObj1950.value)
             },
             {
                 note: {
-                    label: Math.round(tempObj2000.value*100)/100 + "\xB0C",
-                    bgPadding: 5,
-                    title: "Year 2000"
+                    label: "Year 2000: " + Math.round(tempObj2000.value*100)/100 + "\xB0C",
+                    bgPadding: 5
                 },
                 connector: {
                     end: "dot" // 'dot' also available
@@ -290,7 +291,6 @@ async function globalTempDifferences() {
                 x: x(tempObj2000.year)+offset,
                 y: y(tempObj2000.value)
             }
-
         ];
 
         const makeAnnotations = d3.annotation()
@@ -488,21 +488,21 @@ async function all_city_circles(minDiff, sortEnum, useLastMin, useLastSortEnum) 
     var btn = document.querySelector('#sortCitiesBtn');
     if (sortEnum == 0) { //A to Z
         filteredCityTableData.sort((a,b) => a.city.localeCompare(b.city));
-        btn.innerHTML = 'Sort countries: Alphabetic (A to Z)';
+        btn.innerHTML = 'Sort cities: Alphabetic (A to Z)';
     } else if (sortEnum == 1) { //Z to A
         filteredCityTableData.sort((a,b) => a.city.localeCompare(b.city));
         filteredCityTableData.reverse();
-        btn.innerHTML = 'Sort countries: Alphabetic (Z to A)';
+        btn.innerHTML = 'Sort cities: Alphabetic (Z to A)';
     } else if (sortEnum == 2) { //Diff increasing
         filteredCityTableData.sort((a,b) => a.value - b.value);
-        btn.innerHTML = 'Sort countries: Diff (increasing)';
+        btn.innerHTML = 'Sort cities: Diff (increasing)';
     } else if (sortEnum == 3) { //Diff decreasing
         filteredCityTableData.sort((a,b) => a.value - b.value);
         filteredCityTableData.reverse();
-        btn.innerHTML = 'Sort countries: Diff (decreasing)';
+        btn.innerHTML = 'Sort cities: Diff (decreasing)';
     }
 
-    //Next, create a grid for the circles representing the countries
+    //Next, create a grid for the circles representing the cities
     numRows = Math.ceil(filteredCityTableData.length / numCityCols);
     var tableData = d3.range(numCityCols*numRows).slice(0, -((numCityCols*numRows)-filteredCityTableData.length));
 
@@ -634,6 +634,19 @@ async function createLineGraphsForCountry(idx) {
     const g = svg.append("g")
         .attr("transform", "translate(" + offset + "," + 0 + ")");
 
+
+    //Add title to chart
+    var textSize = country.length >= 20 ? "16px" : "18px";
+    var x_title = country.length >= 20 ? 260 : 225;
+    console.log(country.length, textSize, x_title);
+    svg.append("text")
+        .attr("x", x_title)             
+        .attr("y", 40)
+        .attr("text-anchor", "middle")  
+        .style("font-size", textSize) 
+        .style("text-decoration", "underline")  
+        .text(country + " Rolling Temperature Average");
+
     var x = d3.scaleTime()
         .domain(d3.extent(countryData, function(d) { return d.year; }))
         .range([ 0, chartSize ]);
@@ -735,42 +748,111 @@ async function createLineGraphsForCountry(idx) {
                 .style("top", "0px")
                 .style("left", "0px")
         })
-        // .on("click", transitionToCountryGraph);
-        
-        //Add color legend - not supported natively :(
-        // var colorScale = d3.scaleLinear()
-        //     .domain([0,500])
-        //     .range(["red", "blue"]);
+    // .on("click", transitionToCountryGraph);
+    
+    //Add color legend - not supported natively :(
+    // var colorScale = d3.scaleLinear()
+    //     .domain([0,500])
+    //     .range(["red", "blue"]);
 
-        // var legend = d3.legendColor()
-        //     .scale(colorScale);
-        
-        // svg.append("g")
-        //     .attr("transform", "translate(500,10)")
-        //     .call(legend);
+    // var legend = d3.legendColor()
+    //     .scale(colorScale);
+    
+    // svg.append("g")
+    //     .attr("transform", "translate(500,10)")
+    //     .call(legend);
 
-        const makeAnnotations = d3.annotation()
-            .editMode(true)
-            //also can set and override in the note.padding property
-            //of the annotation object
-            .notePadding(15)
-            .type(type)
-            //accessors & accessorsInverse not needed
-            //if using x, y in annotations JSON
-            .accessors({
-                x: d => x(parseTime(d.year)),
-                y: d => y(d.value)
-            })
-            .accessorsInverse({
-                date: d => timeFormat(x.invert(d.x)),
-                close: d => y.invert(d.y)
-            })
-            .annotations(annotations)
-
-        svg.append("g")
-            .attr("class", "annotation-group")
-            .call(makeAnnotations)
+    //Create temp objects for annotations
+    var highestTempObj = countryData.reduce(function(prev, current) {
+        if (+current.value > +prev.value) {
+            return current;
+        } else {
+            return prev;
         }
+    });
+
+    var tempObj1900 = countryData.filter(x => x.year.getFullYear() == 1900)[0];
+    var tempObj1950 = countryData.filter(x => x.year.getFullYear() == 1950)[0];
+    var tempObj2000 = countryData.filter(x => x.year.getFullYear() == 2000)[0];
+
+    const timeFormat = d3.timeFormat("%y");
+    const parseTime = d3.timeParse("%y");
+    const type = d3.annotationLabel;
+    const annotations = [
+        {
+            note: {
+                label: "Hottest temp (" + highestTempObj.year.getFullYear() + "): " + Math.round(highestTempObj.value*100)/100 + "\xB0C",
+                wrap: 150
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: 25,
+            dx: -300,
+            x: x(highestTempObj.year)+offset,
+            y: y(highestTempObj.value),
+        },
+        {
+            note: {
+                label: "Year 1900: " + Math.round(tempObj1900.value*100)/100 + "\xB0C",
+                bgPadding: 5,
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: -100,
+            dx: -100,
+            x: x(tempObj1900.year)+offset,
+            y: y(tempObj1900.value)
+        },
+        {
+            note: {
+                label: "Year 1950: " + Math.round(tempObj1950.value*100)/100 + "\xB0C",
+                bgPadding: 5
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: -100,
+            dx: -100,
+            x: x(tempObj1950.year)+offset,
+            y: y(tempObj1950.value)
+        },
+        {
+            note: {
+                label: "Year 2000: " + Math.round(tempObj2000.value*100)/100 + "\xB0C",
+                bgPadding: 5
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: -50,
+            dx: -100,
+            x: x(tempObj2000.year)+offset,
+            y: y(tempObj2000.value)
+        }
+
+    ];
+
+    const makeAnnotations = d3.annotation()
+        .editMode(true)
+        .notePadding(15)
+        .type(type)
+        
+        .accessors({
+            x: d => x(parseTime(d.year)),
+            y: d => y(d.value)
+        })
+        .accessorsInverse({
+            date: d => timeFormat(x.invert(d.x)),
+            close: d => y.invert(d.y)
+        })
+        .annotations(annotations)
+
+    svg.append("g")
+        .attr("class", "annotation-group")
+        .call(makeAnnotations)
+}
 
 
 
@@ -818,6 +900,18 @@ async function createLineGraphsForCity(idx) {
     //Group for sub elements
     const g = svg.append("g")
         .attr("transform", "translate(" + offset + "," + 0 + ")");
+
+    //Add title to chart
+    var textSize = city.length >= 20 ? "16px" : "18px";
+    var x_title = city.length >= 20 ? 260 : 225;
+    console.log(city.length, textSize, x_title);
+    svg.append("text")
+        .attr("x", x_title)             
+        .attr("y", 40)
+        .attr("text-anchor", "middle")  
+        .style("font-size", textSize) 
+        .style("text-decoration", "underline")  
+        .text(city + " Rolling Temperature Average");
 
     var x = d3.scaleTime()
         .domain(d3.extent(cityData, function(d) { return d.year; }))
@@ -933,14 +1027,83 @@ async function createLineGraphsForCity(idx) {
     //     .attr("transform", "translate(500,10)")
     //     .call(legend);
 
+    //Create temp objects for annotations
+    var highestTempObj = cityData.reduce(function(prev, current) {
+        if (+current.value > +prev.value) {
+            return current;
+        } else {
+            return prev;
+        }
+    });
+
+    var tempObj1900 = cityData.filter(x => x.year.getFullYear() == 1900)[0];
+    var tempObj1950 = cityData.filter(x => x.year.getFullYear() == 1950)[0];
+    var tempObj2000 = cityData.filter(x => x.year.getFullYear() == 2000)[0];
+
+    const timeFormat = d3.timeFormat("%y");
+    const parseTime = d3.timeParse("%y");
+    const type = d3.annotationLabel;
+    const annotations = [
+        {
+            note: {
+                label: "Hottest temp (" + highestTempObj.year.getFullYear() + "): " + Math.round(highestTempObj.value*100)/100 + "\xB0C",
+                wrap: 150
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: 25,
+            dx: -300,
+            x: x(highestTempObj.year)+offset,
+            y: y(highestTempObj.value),
+        },
+        {
+            note: {
+                label: "Year 1900: " + Math.round(tempObj1900.value*100)/100 + "\xB0C",
+                bgPadding: 5,
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: -100,
+            dx: -100,
+            x: x(tempObj1900.year)+offset,
+            y: y(tempObj1900.value)
+        },
+        {
+            note: {
+                label: "Year 1950: " + Math.round(tempObj1950.value*100)/100 + "\xB0C",
+                bgPadding: 5
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: -100,
+            dx: -100,
+            x: x(tempObj1950.year)+offset,
+            y: y(tempObj1950.value)
+        },
+        {
+            note: {
+                label: "Year 2000: " + Math.round(tempObj2000.value*100)/100 + "\xB0C",
+                bgPadding: 5
+            },
+            connector: {
+                end: "dot" // 'dot' also available
+            },
+            dy: -50,
+            dx: -100,
+            x: x(tempObj2000.year)+offset,
+            y: y(tempObj2000.value)
+        }
+
+    ];
+
     const makeAnnotations = d3.annotation()
         .editMode(true)
-        //also can set and override in the note.padding property
-        //of the annotation object
         .notePadding(15)
         .type(type)
-        //accessors & accessorsInverse not needed
-        //if using x, y in annotations JSON
+        
         .accessors({
             x: d => x(parseTime(d.year)),
             y: d => y(d.value)
@@ -1112,11 +1275,11 @@ function transitionToCountryCirclesFromCityCircles() {
 
     svg.transition()
         .duration(500)
-        .attr("transform", "translate(" + -transitionSize*2 + ",0)scale(1)")
+        .attr("transform", "translate(" + transitionSize*2 + ",0)scale(1)")
         .on("end", function() {
             //Move graph off screen, then make country graph visible
             var mainSvg = d3.select(countryCirclesSvgID)
-            .attr("transform", "translate(" + transitionSize*2 + ",0)scale(1)")
+            .attr("transform", "translate(" + -transitionSize*2 + ",0)scale(1)")
 
             //Make the div that holds the circles invisible
             d3.select('#cityCirclesSvgHolder').style('display', 'none');
