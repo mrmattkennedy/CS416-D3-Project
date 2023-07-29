@@ -328,7 +328,8 @@ function createLineGraph(dataSource, locationFilter, svgID, lineGradientID) {
     var scatterData = [];
     for (i = 0; i < data.length; i=i+scatterDelta) {
         scatterData.push(data[i]);
-      }
+    }
+    // console.log(scatterData);
 
     //Combine global data and country data into one array to get min/max scale for y axis
     var allTemps = [];
