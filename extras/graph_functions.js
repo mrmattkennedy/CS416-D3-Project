@@ -451,7 +451,7 @@ function createLineGraph(dataSource, locationFilter, svgID, lineGradientID) {
             tooltip.style("opacity", 1)
             .style("top", (d3.event.pageY-10)+"px")
             .style("left",(d3.event.pageX+10)+"px")
-            .html(country + '<br>Year ' + scatterData[i].year.getFullYear() + '<br>' + Math.round(scatterData[i].value*100)/100 + '\xB0C (' + diff + '\xB0C)');
+            .html('Year ' + scatterData[i].year.getFullYear() + '<br>' + Math.round(scatterData[i].value*100)/100 + '\xB0C (' + diff + '\xB0C)');
         })
         .on("mousemove", function() {
             return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
